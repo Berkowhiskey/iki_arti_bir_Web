@@ -1,0 +1,125 @@
+// İki Artı Bir Yapı — Veritabanı Şeması
+// Provider: mysql (XAMPP / MariaDB 10.4 üzerinde çalışır)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Bağlantı URL'i Prisma 7 ile prisma.config.ts'e taşındı.
+datasource db {
+  provider = "mysql"
+}
+
+/// Proje kategorileri — Faz 4.4'te admin panelde seçim olarak sunulur.
+enum ProjectCategory {
+  MIMARLIK
+  MUHENDISLIK
+  IC_DIZAYN
+}
+
+/// Admin hesapları (Ceren ve Cansın). Rol ayrımı yok, ikisi de Super Admin.
+model Admin {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  name         String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("admins")
+}
+
+/// Hero alanı ayarları — tekil satır (id her zaman 1).
+model HeroSettings {
+  id         Int      @id @default(1)
+  slogan     String   @db.Text
+  subSlogan  String?  @db.Text
+  updatedAt  DateTime @updatedAt
+
+  @@map("hero_settings")
+}
+
+/// Hakkımızda bölümü — tekil satır (id her zaman 1).
+model AboutSettings {
+  id        Int      @id @default(1)
+  title     String
+  content   String   @db.Text
+  imageUrl  String?
+  updatedAt DateTime @updatedAt
+
+  @@map("about_settings")
+}
+
+/// İletişim bilgileri ve sosyal medya linkleri — tekil satır (id her zaman 1).
+model ContactSettings {
+  id           Int      @id @default(1)
+  email        String
+  phone        String
+  address      String   @db.Text
+  instagramUrl String?
+  linkedinUrl  String?
+  /// Ofis konumu — harita gömme için.
+  mapLat       Decimal? @db.Decimal(10, 7)
+  mapLng       Decimal? @db.Decimal(10, 7)
+  updatedAt    DateTime @updatedAt
+
+  @@map("contact_settings")
+}
+
+/// Ekip üyeleri — Faz 4.3'teki veri tablosu bu modeli yönetir.
+model TeamMember {
+  id        Int      @id @default(autoincrement())
+  name      String
+  title     String
+  bio       String   @db.Text
+  imageUrl  String?
+  /// Ziyaretçi sayfasındaki görüntülenme sırası.
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([order])
+  @@map("team_members")
+}
+
+/// Şantiyeler / projeler — portfolyo modülünün ana modeli.
+model Project {
+  id          Int             @id @default(autoincrement())
+  title       String
+  slug        String          @unique
+  category    ProjectCategory
+  /// Örn: "Foça / İzmir"
+  location    String
+  description String          @db.Text
+  /// Koordinatlar Decimal — Float yuvarlama hatası harita hassasiyetini bozar.
+  latitude    Decimal         @db.Decimal(10, 7)
+  longitude   Decimal         @db.Decimal(10, 7)
+  coverImage  String?
+  order       Int             @default(0)
+  isPublished Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  images ProjectImage[]
+
+  /// Faz 5.1: "en son eklenen şantiyenin koordinatını Hero'ya bas" sorgusu bu index'e dayanır.
+  @@index([createdAt(sort: Desc)])
+  @@index([category])
+  @@map("projects")
+}
+
+/// Proje galerisi — her projeye sınırsız görsel.
+model ProjectImage {
+  id        Int      @id @default(autoincrement())
+  projectId Int
+  url       String
+  alt       String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, order])
+  @@map("project_images")
+}

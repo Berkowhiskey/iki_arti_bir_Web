@@ -1,0 +1,186 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Marka paleti — sol panel (Mühendislik / beton) */
+  --color-beton-50: var(--beton-50);
+  --color-beton-100: var(--beton-100);
+  --color-beton-200: var(--beton-200);
+  --color-beton-300: var(--beton-300);
+  --color-beton-400: var(--beton-400);
+  --color-beton-500: var(--beton-500);
+  --color-beton-600: var(--beton-600);
+  --color-beton-700: var(--beton-700);
+  --color-beton-800: var(--beton-800);
+  --color-beton-900: var(--beton-900);
+
+  /* Marka paleti — sağ panel (Mimarlık / meşe) */
+  --color-mese-50: var(--mese-50);
+  --color-mese-100: var(--mese-100);
+  --color-mese-200: var(--mese-200);
+  --color-mese-300: var(--mese-300);
+  --color-mese-400: var(--mese-400);
+  --color-mese-500: var(--mese-500);
+  --color-mese-600: var(--mese-600);
+  --color-mese-700: var(--mese-700);
+  --color-mese-800: var(--mese-800);
+  --color-mese-900: var(--mese-900);
+
+  /* Ortak antrasit tonları */
+  --color-antrasit: var(--antrasit);
+  --color-antrasit-deep: var(--antrasit-deep);
+}
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+
+  /* Beton — soğuk gri, hafif mavi kırılmalı (brütalist sol panel) */
+  --beton-50: oklch(0.968 0.003 250);
+  --beton-100: oklch(0.93 0.005 250);
+  --beton-200: oklch(0.86 0.006 250);
+  --beton-300: oklch(0.74 0.008 250);
+  --beton-400: oklch(0.62 0.009 250);
+  --beton-500: oklch(0.52 0.01 250);
+  --beton-600: oklch(0.43 0.01 250);
+  --beton-700: oklch(0.35 0.009 250);
+  --beton-800: oklch(0.27 0.008 250);
+  --beton-900: oklch(0.2 0.006 250);
+
+  /* Meşe — sıcak ahşap tonları (lüks sağ panel) */
+  --mese-50: oklch(0.966 0.014 75);
+  --mese-100: oklch(0.93 0.028 75);
+  --mese-200: oklch(0.87 0.045 72);
+  --mese-300: oklch(0.79 0.065 70);
+  --mese-400: oklch(0.71 0.082 66);
+  --mese-500: oklch(0.63 0.09 62);
+  --mese-600: oklch(0.55 0.085 58);
+  --mese-700: oklch(0.46 0.072 55);
+  --mese-800: oklch(0.37 0.056 52);
+  --mese-900: oklch(0.29 0.042 50);
+
+  /* Antrasit — iki panelin ortak zemini */
+  --antrasit: oklch(0.22 0.006 250);
+  --antrasit-deep: oklch(0.16 0.005 250);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
