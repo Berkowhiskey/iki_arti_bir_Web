@@ -183,4 +183,25 @@
   html {
     @apply font-sans;
   }
+
+  /* Bağlantıyla bölüme atlarken sabit üst bar başlığı örtmesin. */
+  section[id] {
+    scroll-margin-top: 5rem;
+  }
+
+  /* Hero tam ekran olduğu için payı olmamalı. */
+  section#anasayfa {
+    scroll-margin-top: 0;
+  }
+
+  /* Skip-link ve tarayıcı içi çapa atlamaları da yumuşak olsun. */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
 }

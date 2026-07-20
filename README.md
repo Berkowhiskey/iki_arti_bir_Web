@@ -5,7 +5,7 @@
 İzmir/Foça merkezli bir mimarlık ve inşaat mühendisliği firması için geliştirilen,
 kendi içerik yönetim sistemine sahip full-stack kurumsal web portalı.
 
-**Durum:** 🚧 Geliştirme aşamasında — Faz 1 (altyapı ve veritabanı mimarisi) tamamlandı.
+**Durum:** 🚧 Geliştirme aşamasında — Faz 2 tamamlandı (ziyaretçi arayüzü çalışır durumda).
 
 ---
 
@@ -41,7 +41,7 @@ bilgileri) yönetebildiği korumalı bir admin paneli.
 | ORM | Prisma | 7.8.0 |
 | Veritabanı | MySQL / MariaDB | 10.4+ |
 | Form & Doğrulama | React Hook Form + Zod | — |
-| Animasyon | Framer Motion | *(Faz 2)* |
+| Animasyon | Motion (Framer Motion) | 12.42.2 |
 | Kimlik Doğrulama | Auth.js (NextAuth v5) | *(Faz 3)* |
 | İkonlar | Lucide React | — |
 
@@ -72,6 +72,23 @@ Hero, Hakkımızda ve İletişim ayarları `id = 1` sabitli tek satırlık tablo
 `upsert` ile güncelleniyor. Böylece "kayıt var mı yok mu" kontrolü ve satır çoğalması
 riski tamamen ortadan kalkıyor.
 
+**Görsel tema veriden gelir, konumdan değil**
+Ekip kartlarının hangi paletle (beton/meşe) çizileceği `TeamMember.discipline`
+alanından okunur — kartın sırasından değil. Konuma dayalı bir çözüm, yönetici panelden
+sıralama değiştirildiği anda renkleri karıştırırdı. Küçük bir enum alanı, sessizce
+bozulacak bir bağımlılığı ortadan kaldırıyor.
+
+**Scroll-driven animasyon, `useScroll` hedefe bağlanarak**
+Hero'daki scroll ilerlemesi tüm sayfaya değil, hero elementinin kendisine bağlı
+(`offset: ["start start", "end start"]`). Böylece slogan modalının küçülüp kaybolması
+ve grid çizgilerinin uzaması, sayfanın toplam uzunluğundan bağımsız olarak hep aynı
+his veriyor — yeni bölüm eklendiğinde animasyon zamanlaması bozulmuyor.
+
+**Hareket azaltma tercihi baştan kurgulandı**
+Animasyonlu her bileşen `useReducedMotion` kontrol ediyor. Vestibüler rahatsızlığı
+olan kullanıcılar için scroll dönüşümleri tamamen devre dışı kalıyor ve açılış
+ekranı kısalıyor — sonradan eklenen bir yama değil, mimarinin parçası.
+
 **Tema altyapısı CSS değişkeni tabanlı**
 Split-screen'in iki paleti (`beton-50..900` soğuk gri, `mese-50..900` sıcak ahşap)
 Tailwind v4'ün `@theme` bloğunda tanımlı. Arayüz kodlanmadan önce tasarım sistemi
@@ -86,7 +103,7 @@ Admin              → Yönetici hesapları (bcrypt, 12 round)
 HeroSettings       → Slogan ve alt slogan                              (tekil satır)
 AboutSettings      → Hakkımızda metni ve görseli                       (tekil satır)
 ContactSettings    → İletişim bilgileri, sosyal medya, ofis koordinatı (tekil satır)
-TeamMember         → Ekip üyeleri (sıralanabilir, aktif/pasif)
+TeamMember         → Ekip üyeleri (sıralanabilir, aktif/pasif, disiplin teması)
 Project            → Şantiyeler — kategori, lokasyon, koordinat, yayın durumu
   └─ ProjectImage  → Proje galerisi (cascade delete, sıralanabilir)
 ```
@@ -159,7 +176,7 @@ Site `http://localhost:3000` adresinde çalışır.
 ## Yol Haritası
 
 - [x] **Faz 1** — Altyapı, Prisma şeması, migration ve seed
-- [ ] **Faz 2** — Split-screen ziyaretçi arayüzü ve scroll-driven Framer Motion animasyonları
+- [x] **Faz 2** — Split-screen ziyaretçi arayüzü ve scroll-driven Framer Motion animasyonları
 - [ ] **Faz 3** — Auth.js entegrasyonu, korumalı admin layout, dark mode
 - [ ] **Faz 4** — CMS modülleri (CRUD), görsel yükleme, veri tabloları
 - [ ] **Faz 5** — Dinamik koordinat entegrasyonu, SEO ve performans optimizasyonu

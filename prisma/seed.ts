@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { PrismaClient, ProjectCategory } from "@prisma/client";
+import { Discipline, PrismaClient, ProjectCategory } from "@prisma/client";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import bcrypt from "bcryptjs";
 
@@ -62,7 +62,8 @@ async function seedSettings() {
 
   await prisma.aboutSettings.upsert({
     where: { id: 1 },
-    update: {},
+    // Görsel yolu null — dosya yüklenene kadar arayüz zarif placeholder gösterir.
+    update: { imageUrl: null },
     create: {
       id: 1,
       title: "Hakkımızda",
@@ -73,7 +74,7 @@ async function seedSettings() {
         "doğallığını ve ışığın mekân üzerindeki etkisini merkeze alır.\n\n" +
         "Konsept aşamasından anahtar teslimine kadar tüm süreci kendi ekibimizle yürütüyor, " +
         "her detayın çizimdeki haliyle sahada birebir örtüşmesini sağlıyoruz.",
-      imageUrl: "/uploads/placeholder-about.jpg",
+      imageUrl: null,
     },
   });
 
@@ -101,6 +102,7 @@ async function seedTeam() {
       email: "ceren",
       name: "Ceren Gürbüz",
       title: "Mimar, Kurucu Ortak",
+      discipline: Discipline.MIMARLIK,
       bio:
         "Mimarlık eğitimini tamamladıktan sonra konut ve butik otel projelerinde tasarım " +
         "yürütücülüğü yaptı. İç mekânda doğal malzeme kullanımı ve ışık kurgusu üzerine " +
@@ -111,6 +113,7 @@ async function seedTeam() {
       email: "cansin",
       name: "Cansın Gürbüz",
       title: "İnşaat Mühendisi, Kurucu Ortak",
+      discipline: Discipline.MUHENDISLIK,
       bio:
         "Betonarme ve çelik yapı tasarımı üzerine uzmanlaştı. Deprem yönetmeliğine uygun " +
         "güçlendirme projeleri ve saha uygulama denetimi konularında deneyimli. " +
@@ -128,7 +131,10 @@ async function seedTeam() {
       name: member.name,
       title: member.title,
       bio: member.bio,
-      imageUrl: `/uploads/placeholder-team-${member.email}.jpg`,
+      discipline: member.discipline,
+      // Fotoğraf admin panelden yüklenene kadar null — arayüz baş harfli
+      // placeholder gösterir, kırık görsel çıkmaz.
+      imageUrl: null,
       order: member.order,
       isActive: true,
     };
@@ -156,7 +162,6 @@ async function seedProjects() {
         "olarak kurgulandı. Cephede yerel taş ve ısıl işlem görmüş ahşap birlikte kullanıldı.",
       latitude: "38.6712000",
       longitude: "26.7583000",
-      imageCount: 3,
     },
     {
       title: "Menemen Endüstriyel Tesis Güçlendirme",
@@ -169,7 +174,6 @@ async function seedProjects() {
         "hazırlandı. Uygulama, üretim durdurulmadan etaplar hâlinde tamamlandı.",
       latitude: "38.6089000",
       longitude: "27.0678000",
-      imageCount: 2,
     },
     {
       title: "Alaçatı Butik Otel İç Mekân",
@@ -182,42 +186,32 @@ async function seedProjects() {
         "kullanıldı. Tüm mobilyalar proje için özel olarak tasarlandı.",
       latitude: "38.2836000",
       longitude: "26.3739000",
-      imageCount: 3,
     },
   ];
 
   for (const [index, project] of projects.entries()) {
-    const { imageCount, ...projectData } = project;
-
-    const record = await prisma.project.upsert({
+    await prisma.project.upsert({
       where: { slug: project.slug },
-      update: {},
+      // Kapak görseli null — gerçek dosya admin panelden yüklenecek.
+      update: { coverImage: null },
       create: {
-        ...projectData,
-        coverImage: `/uploads/placeholder-${project.slug}-1.jpg`,
+        ...project,
+        coverImage: null,
         order: index + 1,
         isPublished: true,
       },
     });
-
-    // Galeri görselleri — proje yeni oluştuysa ekle.
-    const existingImages = await prisma.projectImage.count({
-      where: { projectId: record.id },
-    });
-
-    if (existingImages === 0) {
-      await prisma.projectImage.createMany({
-        data: Array.from({ length: imageCount }, (_, i) => ({
-          projectId: record.id,
-          url: `/uploads/placeholder-${project.slug}-${i + 1}.jpg`,
-          alt: `${project.title} — görsel ${i + 1}`,
-          order: i + 1,
-        })),
-      });
-    }
   }
 
-  console.log(`✓ ${projects.length} proje ve galerileri hazır.`);
+  // Eski seed'lerden kalan, diskte karşılığı olmayan galeri kayıtlarını temizle.
+  const removed = await prisma.projectImage.deleteMany({
+    where: { url: { startsWith: "/uploads/placeholder-" } },
+  });
+  if (removed.count > 0) {
+    console.log(`  (${removed.count} geçersiz galeri kaydı temizlendi)`);
+  }
+
+  console.log(`✓ ${projects.length} proje hazır.`);
 }
 
 async function main() {

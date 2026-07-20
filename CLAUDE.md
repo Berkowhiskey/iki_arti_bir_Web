@@ -7,9 +7,28 @@
 > **20.07.2026 - 11:15 — Faz 1 (Altyapı ve Veritabanı Mimarisi) TAMAMLANDI.**
 > Next.js 16.2.10 + Tailwind v4 + Shadcn v4 (Radix/Nova) kuruldu. Prisma 7.8.0 ile
 > 7 modelli şema MariaDB üzerinde migrate edildi ve placeholder verilerle seed'lendi.
-> Build, typecheck ve dev sunucu testleri temiz geçti.
 >
-> **Sıradaki: Faz 2 — Ziyaretçi Arayüzü ve Framer Motion.**
+> **20.07.2026 - 14:40 — Faz 2 (Ziyaretçi Arayüzü ve Framer Motion) TAMAMLANDI.**
+> Split-screen hero, scroll-driven animasyonlar, açılış ekranı ve tüm içerik
+> bölümleri kodlandı. Sayfa tamamen veritabanından besleniyor. Karışık düzen
+> benimsendi: hero ve ekip bölünmüş, diğerleri tek sütun.
+>
+> **20.07.2026 - 16:20 — Faz 2 tasarım revizyonu yapıldı.**
+> Kullanıcı geri bildirimi üzerine hero panellerinin tonu açıldı, mimarlık paneline
+> minimalist mimari çizim motifleri eklendi ve ekip bölümü hero'nun renk ayrımını
+> devraldı. `TeamMember` modeline `discipline` alanı eklendi (migration uygulandı) —
+> ekip kartlarının teması artık sıralamadan değil veriden geliyor.
+>
+> **20.07.2026 - 17:30 — Üst navigasyon eklendi, Faz 2 kapandı.**
+> Hero'da gizlenen, scroll'da belirip kalıcı olan buzlu cam navbar; yumuşak kaydırma,
+> aktif bölüm takibi ve mobil menü ile. Projeler bölümünün başlığı "Tamamlanan projeler" → "Projeler"
+> olarak değiştirildi (devam eden şantiyeler de vitrine dahil olsun diye).
+>
+> **Sıradaki: Faz 3 — Kimlik Doğrulama ve Admin Panel Core.**
+>
+> **Faz 4'e ertelenen kullanıcı fikirleri:** ekip üyesi detay sayfaları (TeamMember'a
+> `slug` alanı gerekir) ve proje detay/galeri sayfaları. İkisi de admin CRUD hazır
+> olmadan boş içerikle kalacağı için bilinçli olarak ertelendi.
 
 **Kurulum sırasında planlanandan sapan noktalar** (detaylar `MEMORY.md`'de):
 

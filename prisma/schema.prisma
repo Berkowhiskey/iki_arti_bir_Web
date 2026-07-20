@@ -66,18 +66,28 @@ model ContactSettings {
   @@map("contact_settings")
 }
 
+/// Ekip üyesinin görsel teması. Split-screen kimliğinde hangi paletle
+/// gösterileceğini belirler — sıralamadan bağımsızdır.
+enum Discipline {
+  MUHENDISLIK
+  MIMARLIK
+  DIGER
+}
+
 /// Ekip üyeleri — Faz 4.3'teki veri tablosu bu modeli yönetir.
 model TeamMember {
-  id        Int      @id @default(autoincrement())
-  name      String
-  title     String
-  bio       String   @db.Text
-  imageUrl  String?
+  id         Int        @id @default(autoincrement())
+  name       String
+  title      String
+  bio        String     @db.Text
+  imageUrl   String?
+  /// Beton (mühendislik) mi meşe (mimarlık) teması mı kullanılacak.
+  discipline Discipline @default(DIGER)
   /// Ziyaretçi sayfasındaki görüntülenme sırası.
-  order     Int      @default(0)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  order      Int        @default(0)
+  isActive   Boolean    @default(true)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
 
   @@index([order])
   @@map("team_members")
