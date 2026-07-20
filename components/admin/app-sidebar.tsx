@@ -6,6 +6,7 @@ import {
   Building2,
   Contact,
   ExternalLink,
+  KeyRound,
   LayoutDashboard,
   Info,
   Sparkles,
@@ -40,6 +41,10 @@ const NAV_GROUPS = [
       { href: "/admin/portfolio", label: "Projeler", icon: Building2 },
       { href: "/admin/contact-settings", label: "İletişim", icon: Contact },
     ],
+  },
+  {
+    label: "Hesap",
+    items: [{ href: "/admin/account", label: "Şifre Değiştir", icon: KeyRound }],
   },
 ] as const;
 

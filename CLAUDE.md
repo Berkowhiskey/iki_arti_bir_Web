@@ -36,7 +36,15 @@
 > uyuşmazlığı üretiyordu. Tema artık **çerezde** tutulup sunucuda doğrudan `<html>`
 > sınıfına yazılıyor — istemci script'i gerekmiyor, FOUC de yok.
 >
-> **Sıradaki: Faz 4 — Full CMS Modülleri.**
+> **20.07.2026 - 23:15 — Faz 4 / Parça 1 TAMAMLANDI.**
+> Şifre değiştirme, Hero, Hakkımızda ve İletişim modülleri **Server Actions** ile
+> kodlandı (CLAUDE.md'deki `app/api/cms/` yerine — gerekçesi `MEMORY.md`'de).
+> Faz 1'den beri taşınan geçici şifre borcu artık panelden kapatılabiliyor.
+>
+> ⚠️ **Server Action kuralı:** Action'lar herkese açık HTTP uç noktalarıdır.
+> Veri değiştiren her action ilk satırında `requireAdmin()` çağırmak zorundadır.
+>
+> **Sıradaki: Faz 4 / Parça 2 — Görsel yükleme altyapısı + Ekip ve Proje CRUD.**
 >
 > **Faz 4'e ertelenen kullanıcı fikirleri:** ekip üyesi detay sayfaları (TeamMember'a
 > `slug` alanı gerekir) ve proje detay/galeri sayfaları. İkisi de admin CRUD hazır

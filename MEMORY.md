@@ -7,13 +7,101 @@ mimari kararları kaydeder. Her faz sonunda `CLAUDE.md` §6 kuralı gereği gün
 
 ## Güncel Durum
 
-**Son güncelleme: 20.07.2026 - 21:30**
+**Son güncelleme: 20.07.2026 - 23:15**
 
 - ✅ **Faz 1 — Altyapı ve Veritabanı Mimarisi: TAMAMLANDI**
 - ✅ **Faz 2 — Ziyaretçi Arayüzü ve Framer Motion: TAMAMLANDI**
 - ✅ **Faz 3 — Kimlik Doğrulama ve Admin Panel Core: TAMAMLANDI**
-- ⬜ Faz 4 — Full CMS Modülleri (sıradaki)
+- 🟡 **Faz 4 — Full CMS Modülleri: Parça 1/3 TAMAMLANDI**
+  - ✅ Parça 1: Şifre değiştirme + Hero / Hakkımızda / İletişim formları
+  - ⬜ Parça 2: Görsel yükleme altyapısı + Ekip ve Proje CRUD
+  - ⬜ Parça 3: Ekip ve proje detay sayfaları
 - ⬜ Faz 5 — Akıllı Entegrasyonlar ve SEO
+
+---
+
+## 20.07.2026 - 23:15 — Faz 4 / Parça 1 Tamamlandı
+
+### Mimari Karar: Server Actions (CLAUDE.md'den Sapma)
+
+`CLAUDE.md` §3 klasör ağacı `app/api/cms/` altında REST uçları öngörüyordu.
+Kullanıcı onayıyla **Server Actions** tercih edildi: fetch/JSON/hata yakalama
+tekrarı ortadan kalkıyor, tipler uçtan uca güvenli kalıyor ve önbellek
+`revalidatePath` ile tek satırda tazeleniyor.
+
+> Yine de ileride mobil uygulama veya dış entegrasyon gerekirse `app/api/cms/`
+> altına REST uçları eklenebilir; Server Actions bunu engellemiyor.
+
+### ⚠️ En Kritik Güvenlik Kuralı
+
+**Server Action'lar herkese açık HTTP uç noktalarıdır.** Panel `proxy.ts` ile
+korunsa bile action'ın kendisi doğrudan çağrılabilir. Bu yüzden:
+
+> **Veri değiştiren HER action, ilk satırında `requireAdmin()` çağırmak
+> ZORUNDADIR.** Yeni action eklerken bunu atlarsanız panel korumalı görünür ama
+> veri dışarıdan değiştirilebilir olur.
+
+`lib/actions.ts` bu altyapıyı sağlar:
+- `requireAdmin()` — oturumu doğrular, admin id'sini döndürür
+- `runAction()` — try-catch sarmalayıcı (CLAUDE.md §5 gereği); beklenmedik hatanın
+  detayı sunucu loguna, kullanıcıya genel mesaj gider
+- `ActionResult` — `{ ok, message, fieldErrors? }` ortak dönüş tipi
+
+### Doğrulama Katmanı
+
+`lib/validations.ts` şemaları **istemci ve sunucu tarafından paylaşılır**.
+İstemci doğrulaması yalnızca kullanıcı deneyimidir; action aynı şemayla yeniden
+doğrular ve alan bazlı hataları forma geri yansıtır.
+
+> ⚠️ **`z.preprocess` kullanmayın.** Girdi tipini `unknown`'a çevirdiği için
+> `zodResolver` tip uyuşmazlığı üretir — ilk denemede bu hatayla karşılaşıldı.
+> Opsiyonel alanlar boş string kabul eder; `null`'a çevirme işi action'da
+> `emptyToNull()` ile yapılır.
+
+**bcrypt tuzağı:** Şifre uzunluğu 72 karakterle sınırlandı. bcrypt 72 baytın
+ötesini **sessizce yok sayar** — sınır konmazsa kullanıcı uzun şifre girdiğini
+sanır ama fazlası hiç doğrulanmaz.
+
+### Kurulan Modüller
+
+| Rota | İçerik |
+| :--- | :--- |
+| `/admin/hero-settings` | Slogan + alt slogan |
+| `/admin/about-settings` | Başlık + metin (görsel Parça 2'de) |
+| `/admin/contact-settings` | İletişim, sosyal medya, ofis koordinatı |
+| `/admin/account` | Şifre değiştirme + oturum bilgileri |
+
+Ortak bileşenler: `components/admin/form-shell.tsx` (`FormShell` + `Field`) —
+başlık, kaydet çubuğu, "kaydedilmemiş değişiklik" uyarısı ve erişilebilir
+etiket/hata bağlantıları.
+
+Her action `revalidatePath("/")` çağırır; ziyaretçi sayfası `force-dynamic`
+olduğu için değişiklik anında yansır.
+
+### Şifre Değiştirme — Güvenlik Borcu Kapatıldı
+
+Faz 1'den beri taşınan `DegistirBeni2026!` borcu artık panelden çözülebilir.
+Mevcut şifre doğrulanmadan değişikliğe izin verilmiyor — oturumu ele geçiren biri
+şifreyi değiştirip hesabı kalıcı olarak devralamasın diye.
+
+### Test Sonuçları (20.07.2026 - 23:15)
+
+| Test | Sonuç |
+| :--- | :--- |
+| `npm run build` | ✅ Temiz, 10 rota |
+| `npx tsc --noEmit` | ✅ |
+| `npx eslint` | ✅ |
+| Tüm action'larda `requireAdmin()` | ✅ 4/4 |
+| Tüm action'larda `"use server"` | ✅ 4/4 |
+| Oturumla sayfalar | ✅ 5/5 HTTP 200 |
+| Girişsiz sayfalar | ✅ 307 → `/login` |
+| Formlar DB'den doluyor | ✅ |
+| Zod şema birim testleri | ✅ 25/25 |
+
+> **Not:** Form kaydetme akışı (butona tıklayıp veritabanına yazma) uçtan uca
+> test edilmedi — Server Action'lar build'e özgü bir eylem kimliğiyle çağrıldığı
+> için curl ile tetiklemek pratik değil. Doğrulama şemaları, yetki kontrolü ve
+> okuma yolu test edildi; yazma yolunu tarayıcıda denemek gerekiyor.
 
 ---
 
