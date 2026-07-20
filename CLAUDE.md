@@ -24,11 +24,26 @@
 > aktif bölüm takibi ve mobil menü ile. Projeler bölümünün başlığı "Tamamlanan projeler" → "Projeler"
 > olarak değiştirildi (devam eden şantiyeler de vitrine dahil olsun diye).
 >
-> **Sıradaki: Faz 3 — Kimlik Doğrulama ve Admin Panel Core.**
+> **20.07.2026 - 19:10 — Faz 3 (Kimlik Doğrulama ve Admin Panel Core) TAMAMLANDI.**
+> Auth.js v5 + Credentials provider ile giriş, `proxy.ts` ile `/admin` rotalarının
+> korunması, Shadcn Sidebar'lı admin kabuğu ve dark mode. 11 güvenlik testinin
+> tamamı geçti.
+>
+> **20.07.2026 - 21:30 — Tema altyapısı yeniden yazıldı, konsol tertemiz.**
+> `next-themes` kaldırıldı: kütüphane tema script'ini bir client component içinden
+> render ediyor, React 19 ise bileşen ağacındaki script'leri istemcide çalıştırmıyor.
+> Bu hem konsol hatası veriyor hem de DOM'da fazladan düğüm bırakıp hydration
+> uyuşmazlığı üretiyordu. Tema artık **çerezde** tutulup sunucuda doğrudan `<html>`
+> sınıfına yazılıyor — istemci script'i gerekmiyor, FOUC de yok.
+>
+> **Sıradaki: Faz 4 — Full CMS Modülleri.**
 >
 > **Faz 4'e ertelenen kullanıcı fikirleri:** ekip üyesi detay sayfaları (TeamMember'a
 > `slug` alanı gerekir) ve proje detay/galeri sayfaları. İkisi de admin CRUD hazır
 > olmadan boş içerikle kalacağı için bilinçli olarak ertelendi.
+>
+> ⚠️ **Açık güvenlik borcu:** `.env`'deki geçici admin şifreleri (`DegistirBeni2026!`)
+> hâlâ değiştirilmedi. Giriş artık çalıştığına göre öncelikli.
 
 **Kurulum sırasında planlanandan sapan noktalar** (detaylar `MEMORY.md`'de):
 
@@ -38,6 +53,9 @@
 - **Veritabanı MariaDB 10.4.32** (XAMPP), MySQL değil. Prisma `mysql` provider'ı ile uyumlu çalışıyor.
 - **Shadcn v4'te `form` bileşeni yok**, yerini `field` aldı. Faz 4 formları `components/ui/field.tsx` üzerine kurulacak.
 - **Node.js 24.18.0**'a yükseltildi (Prisma 7 zorunlu kıldı).
+- **Next 16'da `middleware.ts` deprecate oldu** — rota koruması `proxy.ts` dosyasında, fonksiyon adı `proxy`.
+- **Admin rotaları `app/admin/…` altında**, `app/(admin)/…` değil. Route group parantezleri URL'e yansımadığı için `(admin)` yapısı `/dashboard` üretirdi ve "`/admin` altını koru" kuralıyla çelişirdi.
+- **`next-themes` kullanılmıyor** — React 19 ile hydration çakışması çıkardı. Tema çerezde tutulup sunucuda `<html>` sınıfına yazılıyor (`lib/theme.ts` + `lib/theme-server.ts`).
 
 ---
 

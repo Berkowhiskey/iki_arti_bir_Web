@@ -5,7 +5,7 @@
 İzmir/Foça merkezli bir mimarlık ve inşaat mühendisliği firması için geliştirilen,
 kendi içerik yönetim sistemine sahip full-stack kurumsal web portalı.
 
-**Durum:** 🚧 Geliştirme aşamasında — Faz 2 tamamlandı (ziyaretçi arayüzü çalışır durumda).
+**Durum:** 🚧 Geliştirme aşamasında — Faz 3 tamamlandı (ziyaretçi sitesi ve korumalı yönetim paneli çalışır durumda).
 
 ---
 
@@ -42,7 +42,7 @@ bilgileri) yönetebildiği korumalı bir admin paneli.
 | Veritabanı | MySQL / MariaDB | 10.4+ |
 | Form & Doğrulama | React Hook Form + Zod | — |
 | Animasyon | Motion (Framer Motion) | 12.42.2 |
-| Kimlik Doğrulama | Auth.js (NextAuth v5) | *(Faz 3)* |
+| Kimlik Doğrulama | Auth.js (NextAuth v5) | 5.0.0-beta.31 |
 | İkonlar | Lucide React | — |
 
 ---
@@ -71,6 +71,25 @@ sık atlanan bir detay. Her iki katman da yapılandırıldı ve doğrulandı.
 Hero, Hakkımızda ve İletişim ayarları `id = 1` sabitli tek satırlık tablolarda tutulup
 `upsert` ile güncelleniyor. Böylece "kayıt var mı yok mu" kontrolü ve satır çoğalması
 riski tamamen ortadan kalkıyor.
+
+**Tema çerezde tutulur, istemci script'i yoktur**
+Yaygın çözüm (`next-themes`), temayı hidrasyondan önce uygulamak için bir client
+component içinden `<script>` render eder. React 19 bileşen ağacındaki script'leri
+istemcide çalıştırmadığı için bu, DOM'da fazladan bir düğüm bırakıp hydration
+uyuşmazlığına yol açıyordu. Bağımlılık kaldırıldı: tema artık çerezden okunup
+sunucuda doğrudan `<html>` sınıfına yazılıyor. Ne script gerekiyor, ne de FOUC
+oluşuyor — tema ilk HTML'de zaten doğru.
+
+**Auth yapılandırması Edge/Node sınırına göre ikiye bölündü**
+Rota koruması Edge runtime'da çalışan `proxy.ts` üzerinden yapılıyor; ama Prisma ve
+bcrypt orada çalışamaz. Bu yüzden yapılandırma ikiye ayrıldı: `lib/auth.config.ts`
+(Edge-uyumlu, sağlayıcı içermez) ve `lib/auth.ts` (Prisma + bcrypt, yalnızca Node).
+Tek dosyada toplamak çalışma zamanında kırılırdı.
+
+**Kullanıcı sayımına karşı sabit zamanlı doğrulama**
+E-posta veritabanında bulunamasa bile sahte bir hash ile `bcrypt.compare` çalıştırılıyor.
+Aksi halde yanıt süresi farkı, hangi e-postaların kayıtlı olduğunu ele verirdi. Giriş
+ekranı da hangi alanın hatalı olduğunu söylemez.
 
 **Görsel tema veriden gelir, konumdan değil**
 Ekip kartlarının hangi paletle (beton/meşe) çizileceği `TeamMember.discipline`
@@ -177,7 +196,7 @@ Site `http://localhost:3000` adresinde çalışır.
 
 - [x] **Faz 1** — Altyapı, Prisma şeması, migration ve seed
 - [x] **Faz 2** — Split-screen ziyaretçi arayüzü ve scroll-driven Framer Motion animasyonları
-- [ ] **Faz 3** — Auth.js entegrasyonu, korumalı admin layout, dark mode
+- [x] **Faz 3** — Auth.js entegrasyonu, korumalı admin layout, dark mode
 - [ ] **Faz 4** — CMS modülleri (CRUD), görsel yükleme, veri tabloları
 - [ ] **Faz 5** — Dinamik koordinat entegrasyonu, SEO ve performans optimizasyonu
 

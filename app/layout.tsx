@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { getTheme } from "@/lib/theme-server";
+import { cn } from "@/lib/utils";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -21,15 +23,24 @@ export const metadata: Metadata = {
   description: "Yaşama değer katan benzersiz çizgiler. İzmir/Foça merkezli mimarlık ve inşaat mühendisliği.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Tema çerezden okunup doğrudan <html> sınıfına yazılır.
+  // Böylece istemci script'i gerekmez: ne FOUC olur, ne hydration uyuşmazlığı.
+  const theme = await getTheme();
+
   return (
     <html
       lang="tr"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={cn(
+        geistSans.variable,
+        geistMono.variable,
+        "h-full antialiased",
+        theme === "dark" && "dark"
+      )}
     >
       <body className="min-h-full flex flex-col">
         {children}

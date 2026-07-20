@@ -7,13 +7,175 @@ mimari kararları kaydeder. Her faz sonunda `CLAUDE.md` §6 kuralı gereği gün
 
 ## Güncel Durum
 
-**Son güncelleme: 20.07.2026 - 17:30**
+**Son güncelleme: 20.07.2026 - 21:30**
 
 - ✅ **Faz 1 — Altyapı ve Veritabanı Mimarisi: TAMAMLANDI**
 - ✅ **Faz 2 — Ziyaretçi Arayüzü ve Framer Motion: TAMAMLANDI**
-- ⬜ Faz 3 — Auth ve Admin Panel Core (sıradaki)
-- ⬜ Faz 4 — Full CMS Modülleri
+- ✅ **Faz 3 — Kimlik Doğrulama ve Admin Panel Core: TAMAMLANDI**
+- ⬜ Faz 4 — Full CMS Modülleri (sıradaki)
 - ⬜ Faz 5 — Akıllı Entegrasyonlar ve SEO
+
+---
+
+## 20.07.2026 - 19:10 — Faz 3 Tamamlandı
+
+### Kimlik Doğrulama Mimarisi
+
+**Auth.js v5** (`next-auth@5.0.0-beta.31`) — peer dependency'leri Next 16'yı açıkça
+destekliyor (`^14 || ^15 || ^16`). Credentials provider + JWT oturum (8 saat).
+
+**Yapılandırma bilinçli olarak ikiye bölündü:**
+
+| Dosya | Runtime | İçerik |
+| :--- | :--- | :--- |
+| `lib/auth.config.ts` | **Edge** | Sayfa yolları, callback'ler, oturum stratejisi. `providers: []` |
+| `lib/auth.ts` | **Node** | Credentials provider, Prisma sorgusu, bcrypt karşılaştırma |
+
+> ⚠️ **`lib/auth.ts`'i ASLA `proxy.ts`'e import etmeyin.** Proxy Edge runtime'da
+> çalışır; Prisma (mariadb driver adapter) ve bcrypt orada çalışmaz. Rota koruması
+> yalnızca `auth.config.ts` kullanır.
+
+### `middleware.ts` → `proxy.ts` (Next 16 Değişikliği)
+
+Next.js 16, `middleware` dosya konvansiyonunu **deprecate etti**; yerine `proxy`
+geldi. Dev sunucusu bunu uyarı olarak bildirdi ve resmi dokümana göre taşındı:
+dosya adı `proxy.ts`, dışa aktarılan fonksiyon adı `proxy`. `config.matcher` aynı.
+
+Matcher: `["/admin/:path*", "/login"]`
+
+### Güvenlik Kararları
+
+- **Savunma derinliği:** Proxy koruması yeterli olsa da `app/admin/layout.tsx`
+  ayrıca `auth()` kontrolü yapıp `/login`'e yönlendiriyor. Matcher yanlışlıkla
+  değişirse panel yine de açılmaz.
+- **Kullanıcı sayımına karşı:** `authorize()` içinde e-posta bulunamasa bile sahte
+  bir hash ile `bcrypt.compare` çalıştırılıyor. Aksi halde yanıt süresi farkından
+  hangi e-postaların kayıtlı olduğu anlaşılabilirdi (timing attack).
+- **Hata mesajı:** Giriş ekranı daima "E-posta veya şifre hatalı" diyor; hangi
+  alanın yanlış olduğu açıklanmıyor.
+- **Admin sayfaları** `robots: { index: false }` ile arama motorlarına kapalı.
+
+### Rota Yapısı — CLAUDE.md'den Sapma
+
+`CLAUDE.md` §3 klasör ağacı `app/(admin)/dashboard/` gösteriyor. Ancak route group
+parantezleri URL'e yansımaz — bu yapı `/dashboard` üretirdi ve Faz 3.1'in istediği
+"`/admin` altındaki rotaları koru" kuralıyla çelişirdi.
+
+**Uygulanan:** `app/admin/…` (gerçek yol segmenti) → URL'ler `/admin/dashboard` vb.
+
+### Yakalanan Hata: TooltipProvider
+
+Panel ilk denemede **HTTP 500** verdi: `Tooltip must be used within TooltipProvider`.
+Shadcn'in `SidebarMenuButton` bileşeni `tooltip` prop'u aldığında Radix Tooltip
+kullanıyor ve sarmalayıcı gerektiriyor — kurulum çıktısında uyarılmıştı, atlanmıştı.
+`app/admin/layout.tsx` artık `TooltipProvider` ile sarılı.
+
+> İlginç detay: sayfa **içeriği doğru render oluyordu**, hata render sonrası
+> fırlıyordu. HTML'e bakarak "çalışıyor" sanmak mümkündü — HTTP durum kodunu
+> kontrol etmek bu yüzden önemli.
+
+### Test Sonuçları (20.07.2026 - 19:10)
+
+| # | Test | Sonuç |
+| :-- | :--- | :--- |
+| 1 | Girişsiz `/admin/dashboard` | ✅ 307 → `/login?callbackUrl=…` |
+| 2 | Girişsiz `/admin` | ✅ 307 → `/login` |
+| 3 | `/login` erişilebilir | ✅ 200 |
+| 4 | Ana sayfa açık kaldı | ✅ 200 |
+| 5 | Yanlış şifre | ✅ Reddedildi, oturum açılmadı |
+| 6 | Doğru şifre | ✅ Oturum çerezi oluştu |
+| 7 | Oturumla panel | ✅ 200, veriler doğru |
+| 8 | `/admin` → `/admin/dashboard` | ✅ 307 |
+| 9 | Girişliyken `/login` | ✅ 302 → panele |
+| 10 | Kurcalanmış çerez | ✅ Reddedildi |
+| 11 | Çıkış sonrası erişim | ✅ Reddedildi |
+
+`npm run build` ✅ · `npx tsc --noEmit` ✅
+
+### Test Yazarken Düşülen Tuzak
+
+`dotenv` v17 **stdout'a bir banner basıyor** (`◇ injected env (6) from .env`).
+Kabuktan `PW=$(node -e "require('dotenv').config(); …")` ile şifre okumak bu
+banner'ı da değişkene katıyor (17 yerine 90 karakter) ve giriş testi sahte olarak
+başarısız oluyor. Kabuk scriptlerinde `.env`'den doğrudan okuyun.
+
+### Yakalanan Hata 3: next-themes Kaldırıldı (React 19 Uyumsuzluğu)
+
+Hata 2'nin çözümü (ThemeProvider'ı kök layout'a taşımak) yetmedi; script hatası
+devam etti ve yanına bir de **hydration uyuşmazlığı** eklendi.
+
+**Teşhis — iki hata tek kökten:**
+
+1. `next-themes`, tema script'ini bir **client component** içinden render eder.
+2. React 19, bileşen ağacı içindeki `<script>`'leri istemcide render etmez
+   (→ *"Encountered a script tag while rendering React component"*).
+3. Dolayısıyla istemci ağacında script yok, ama sunucu DOM'unda var — **bir düğüm
+   fazla**. Hydration sırasında her şey bir kayıyor.
+4. React, beklediği `<div data-slot="sidebar-wrapper">` yerine `<script>` ile
+   karşılaşıyor. Script'in `data-slot`'u ve `style`'ı olmadığı için hata ekranında
+   `data-slot={null}`, `style={{}}` görünüyordu (→ *hydration failed*).
+
+Sunucu HTML'i incelenerek doğrulandı: tema `</script>`'i ile `sidebar-wrapper`
+div'i yan yanaydı. `next-themes` 0.4.6 son sürüm — beklenecek bir düzeltme yok.
+
+**Çözüm: script'e olan ihtiyaç ortadan kaldırıldı.**
+
+Tema artık bir **çerezde** tutulup sunucuda doğrudan `<html>` sınıfına yazılıyor:
+
+| Dosya | Rol |
+| :--- | :--- |
+| `lib/theme.ts` | Sabitler ve tip — **hem sunucu hem istemci** kullanır |
+| `lib/theme-server.ts` | `getTheme()` — `next/headers` ile çerezi okur, `server-only` |
+| `components/admin/theme-toggle.tsx` | Düğme; çereze yazar + sınıfı anında uygular |
+| `app/layout.tsx` | Çerezi okuyup `<html>`'e `dark` sınıfını basar |
+
+`next-themes` bağımlılığı tamamen kaldırıldı. `components/ui/sonner.tsx` de ondan
+`useTheme` import ediyordu — o da bağımsızlaştırıldı (Sonner'ın CSS değişkenleri
+zaten `.dark` sınıfını takip ediyor).
+
+> ⚠️ **`lib/theme.ts`'e `next/headers` gibi sunucu-only bir şey EKLEMEYİN.**
+> Client component'ler oradan import ediyor. İlk denemede sabitler ve `getTheme()`
+> aynı dosyadaydı; client component dosyayı import edince `next/headers` de
+> sürüklenip derleme kırıldı (HTTP 500). Bu yüzden ikiye ayrıldı ve sunucu
+> tarafına `server-only` paketi eklendi — yanlışlıkla sızarsa anlaşılır hata verir.
+
+**Kazanç:** bir bağımlılık eksildi, FOUC yok (tema ilk HTML'de doğru), script yok,
+hydration uyuşmazlığı yok. Ziyaretçi sitesi varsayılan olarak açık temada kalır;
+dark mode yalnızca admin panelindeki düğmeyle açılır.
+
+**Doğrulama:** panel HTTP 200 · `body` ilk çocuğu artık doğrudan `sidebar-wrapper`
+(araya giren script yok) · çerez `dark` iken `<html class="… dark">` · typecheck,
+ESLint ve production build temiz.
+
+### Yakalanan Hata 2: ThemeProvider Yanlış Katmandaydı
+
+Panele girildiğinde konsola şu hata düşüyordu:
+
+> *Encountered a script tag while rendering React component. Scripts inside React
+> components are never executed when rendering on the client.*
+
+**Sebep:** `next-themes`, tema sınıfını hidrasyondan önce `<html>`'e yazmak için bir
+`<script>` enjekte eder (açılışta beyaz parlamayı önlemek için). `ThemeProvider`
+`app/admin/layout.tsx` içindeydi; `/login` → panel geçişi **istemci tarafı navigasyon**
+olduğu için provider tarayıcıda mount oluyor, istemcide render edilen script ise
+hiç çalışmıyordu. Yani tema script'i sessizce işlevsizdi.
+
+**Çözüm:** `ThemeProvider` kök layout'a (`app/layout.tsx`) taşındı; bileşen de
+`components/admin/` yerine `components/theme-provider.tsx` altına alındı.
+
+> ⚠️ **ThemeProvider'ı iç layout'lara taşımayın.** Kök layout'ta olmak zorunda,
+> yoksa script sunucu HTML'ine girmez.
+
+**Yapılandırma tercihi:** `defaultTheme="light"`, `enableSystem={false}`.
+Ziyaretçi sitesi bilinçli olarak sabit tasarımdır — işletim sistemi koyu temadaysa
+kendiliğinden değişmemeli. Dark mode yalnızca admin panelindeki düğmeyle açılır.
+
+### ⚠️ Devredilen Güvenlik Borcu
+
+`.env` içindeki `SEED_ADMIN_*` şifreleri hâlâ `DegistirBeni2026!`.
+**Giriş artık çalıştığına göre bu şifreler değiştirilmeli.** Faz 4'te admin panele
+şifre değiştirme ekranı eklenene kadar, `.env`'deki değerleri güncelleyip
+`npm run db:seed` çalıştırmak yeterli (seed `upsert` ile hash'i günceller).
 
 ---
 

@@ -1,15 +1,14 @@
 "use client"
 
-import { useTheme } from "next-themes"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
 
+// Not: Shadcn'in varsayılan sürümü temayı next-themes'ten okur. O bağımlılık
+// React 19 ile hydration sorunu çıkardığı için kaldırıldı (bkz. lib/theme.ts).
+// Sonner'ın kendi CSS değişkenleri zaten .dark sınıfını takip ediyor.
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme()
-
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
       className="toaster group"
       icons={{
         success: (
