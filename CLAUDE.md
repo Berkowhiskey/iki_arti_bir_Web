@@ -92,9 +92,25 @@
 > `SiteFooter`'ın o sayfada nasıl davranacağını kontrol edin — üçü de ana sayfaya
 > göre kurgulanmıştı ve detay sayfalarında ayrı ayrı onarım gerekti.
 >
-> **Sıradaki: Faz 5 — Akıllı Entegrasyonlar ve İnce İşler.**
-> 5.1 dinamik koordinat entegrasyonu (`getLatestProjectCoordinates` hazır, hero'ya
-> bağlı) · 5.2 SEO, `sitemap.ts`/`robots.ts`, görsel optimizasyonu ve Lighthouse.
+> **21.07.2026 - 14:05 — Faz 5 kısmen tamamlandı.**
+> 5.1 (hero koordinat göstergesi) zaten Faz 2'de yapılmıştı, doğrulandı.
+> `sitemap.ts` + `robots.ts` kuruldu; sitemap dinamik ve gizli kayıtları dışlıyor.
+>
+> ⚠️ **Yayına almadan önce `.env`'deki `NEXT_PUBLIC_SITE_URL` gerçek alan adıyla
+> değiştirilmeli** — şu an `localhost`. Unutulursa sitemap erişilemez adresler bildirir.
+>
+> **Önbellekleme kararı:** Ziyaretçi sayfaları **bilinçli olarak dinamik bırakıldı.**
+> Kök layout temayı çerezden okuyor; `cookies()` dinamik bir API olduğu için
+> altındaki tüm rotaları dinamik yapıyor. Statikleştirmenin kazancı bu ölçekte
+> mütevazı, riski ise gerçek (tema sistemi projede iki kez kırıldı).
+> **Bu bir eksiklik değil, tartılmış bir karardır** — gerekçesi `MEMORY.md`'de.
+> `force-dynamic` yine de kaldırıldı ve `revalidatePath` çağrıları tamamlandı,
+> böylece ileride karar değişirse tek engel çerez okuması olacak.
+>
+> **Kalan Faz 5 işleri:** OpenGraph genişletme, JSON-LD yapısal veri ve Lighthouse
+> ölçümü (kullanıcı tarafından bilinçli olarak ertelendi).
+>
+> **Proje durumu: Faz 1-4 tamamlandı, Faz 5 büyük ölçüde tamamlandı. Site sunuma hazır.**
 >
 > ⚠️ **Açık güvenlik borcu (yarı kapandı — 21.07.2026 - 10:45):** Ceren'in şifresi
 > panelden değiştirildi ✅ · **Cansın'ın şifresi hâlâ `DegistirBeni2026!`** ⚠️

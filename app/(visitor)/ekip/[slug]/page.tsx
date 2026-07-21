@@ -7,8 +7,15 @@ import { PersonImage } from "@/components/visitor/image-placeholder";
 import { DISCIPLINE_THEME } from "@/components/visitor/discipline-theme";
 import { Reveal } from "@/components/visitor/reveal";
 
-export const dynamic = "force-dynamic";
-
+/**
+ * Önbelleğe alınmaya hazır: `revalidatePath("/ekip/[slug]", "page")` çağrısı
+ * `app/admin/team-settings/actions.ts` içinde kurulu. Ancak sayfa şu an yine
+ * dinamik render ediliyor — gerekçesi `app/(visitor)/page.tsx` başındaki notta.
+ *
+ * `generateStaticParams` bilinçli olarak kullanılmadı: derleme sırasında tüm
+ * slug'ları taramak, derlemeyi veritabanının o anda ayakta olmasına bağımlı
+ * hale getirirdi.
+ */
 type PageProps = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({

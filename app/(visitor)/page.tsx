@@ -12,8 +12,16 @@ import {
   getTeamMembers,
 } from "@/lib/queries";
 
-// İçerik admin panelden değiştiği için her istekte taze veri çekilir.
-export const dynamic = "force-dynamic";
+/**
+ * `force-dynamic` Faz 5'te kaldırıldı, ama sayfa **hâlâ dinamik render
+ * ediliyor** — kök layout (`app/layout.tsx`) temayı çerezden okuduğu için.
+ * `cookies()` dinamik bir API'dir ve altındaki tüm rotaları dinamik yapar.
+ *
+ * ⚠️ Yani bu sayfayı statikleştirmek için önce **tema okuması kök layout'tan
+ * çıkarılmalı**. Gerekli önbellek tazeleme çağrıları (`revalidatePath`) admin
+ * action'larında zaten kurulu; engel yalnızca çerez okuması.
+ * Ayrıntılı gerekçe ve seçenekler MEMORY.md'de (21.07.2026 - Faz 5).
+ */
 
 export default async function HomePage() {
   const [hero, about, team, projects, contact, latestProject] = await Promise.all([

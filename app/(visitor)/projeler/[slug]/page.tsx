@@ -8,8 +8,12 @@ import { CATEGORY_LABELS } from "@/lib/labels";
 import { ProjectImage } from "@/components/visitor/image-placeholder";
 import { Reveal } from "@/components/visitor/reveal";
 
-export const dynamic = "force-dynamic";
-
+/**
+ * Önbelleğe alınmaya hazır: `revalidatePath("/projeler/[slug]", "page")` çağrısı
+ * `app/admin/portfolio/actions.ts` içinde kurulu. Sayfa şu an yine dinamik
+ * render ediliyor — gerekçesi `app/(visitor)/page.tsx` başındaki notta.
+ * `generateStaticParams` kullanılmama gerekçesi ekip detay sayfasında.
+ */
 type PageProps = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({

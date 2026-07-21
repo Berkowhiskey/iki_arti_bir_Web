@@ -7,8 +7,15 @@ import { projectSchema, slugify, uploadPath } from "@/lib/validations";
 import { deleteUpload } from "@/lib/uploads";
 import { uniqueSlug } from "@/lib/unique-slug";
 
+/**
+ * Proje değişikliklerinden etkilenen tüm sayfaları tazeler.
+ *
+ * ⚠️ **Detay sayfası satırını silmeyin** — gerekçesi team-settings/actions.ts'te.
+ * Galeri işlemleri de bunu çağırır; yeni görsel detay sayfasında görünmelidir.
+ */
 function revalidateProjects() {
   revalidatePath("/");
+  revalidatePath("/projeler/[slug]", "page");
   revalidatePath("/admin/portfolio");
 }
 

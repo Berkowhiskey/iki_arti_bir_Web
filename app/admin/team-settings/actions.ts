@@ -7,9 +7,17 @@ import { teamSchema, slugify } from "@/lib/validations";
 import { deleteUpload } from "@/lib/uploads";
 import { uniqueSlug } from "@/lib/unique-slug";
 
-/** Ekip değişiklikleri hem ana sayfayı hem panel listesini tazeler. */
+/**
+ * Ekip değişikliklerinden etkilenen tüm sayfaları tazeler.
+ *
+ * ⚠️ **Detay sayfası satırını silmeyin.** Ziyaretçi sayfaları Faz 5'te
+ * önbelleğe alındı; `/ekip/[slug]` tazelenmezse panelden yapılan düzenleme
+ * detay sayfasına yansımaz ve kullanıcı "kaydetmedi" sanır.
+ * `"page"` tipi, o rotaya uyan **tüm** slug'ları kapsar.
+ */
 function revalidateTeam() {
   revalidatePath("/");
+  revalidatePath("/ekip/[slug]", "page");
   revalidatePath("/admin/team-settings");
 }
 

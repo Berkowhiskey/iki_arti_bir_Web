@@ -7,7 +7,7 @@ mimari kararları kaydeder. Her faz sonunda `CLAUDE.md` §6 kuralı gereği gün
 
 ## Güncel Durum
 
-**Son güncelleme: 21.07.2026 - 13:27**
+**Son güncelleme: 21.07.2026 - 14:05**
 
 - ✅ **Faz 1 — Altyapı ve Veritabanı Mimarisi: TAMAMLANDI**
 - ✅ **Faz 2 — Ziyaretçi Arayüzü ve Framer Motion: TAMAMLANDI**
@@ -16,7 +16,112 @@ mimari kararları kaydeder. Her faz sonunda `CLAUDE.md` §6 kuralı gereği gün
   - ✅ Parça 1: Şifre değiştirme + Hero / Hakkımızda / İletişim formları
   - ✅ Parça 2: Görsel yükleme altyapısı + Ekip ve Proje CRUD
   - ✅ Parça 3: Ekip ve proje detay sayfaları
-- ⬜ **Faz 5 — Akıllı Entegrasyonlar ve SEO** ← sıradaki
+- 🟡 **Faz 5 — Akıllı Entegrasyonlar ve SEO: kısmen**
+  - ✅ 5.1 Dinamik koordinat entegrasyonu (Faz 2'de yapılmıştı, doğrulandı)
+  - ✅ 5.2a sitemap.xml + robots.txt
+  - ✅ 5.2b Önbellekleme — **incelendi, bilinçli olarak yapılmadı** (gerekçe aşağıda)
+  - ⬜ 5.2c OpenGraph genişletme, JSON-LD, Lighthouse ölçümü (kullanıcı erteledi)
+
+---
+
+## 21.07.2026 - 14:05 — Faz 5: SEO Altyapısı ve Önbellek Engeli
+
+### 5.1 Zaten Yapılmıştı
+
+CLAUDE.md 5.1 adımı "son projenin koordinatlarını hero'ya yazdır" diyor. Bu
+**Faz 2'de kodlanmış**: `getLatestProjectCoordinates()` → `page.tsx` →
+`hero-section.tsx` sol alt köşe. Doğrulandı, ek iş gerekmedi.
+
+### Kurulan: Site Adresi Altyapısı
+
+`sitemap.xml`, `robots.txt` ve paylaşım önizlemeleri **mutlak URL** ister.
+Adres koda gömülmedi, `.env`'deki `NEXT_PUBLIC_SITE_URL`'den okunuyor
+(`lib/site.ts`). `.env.example` da güncellendi.
+
+> ⚠️ **Yayına almadan önce `NEXT_PUBLIC_SITE_URL` gerçek alan adıyla
+> değiştirilmeli.** Şu an `http://localhost:3000`. Unutulursa sitemap arama
+> motorlarına erişilemez adresler bildirir ve SEO çalışması boşa gider.
+> `NEXT_PUBLIC_` öneki zorunlu (değer derlemede gömülür).
+
+### Kurulan: sitemap.ts ve robots.ts
+
+Sitemap **dinamik** — ekip ve proje slug'ları veritabanından okunuyor, yeni
+kayıt eklendiğinde elle satır eklemek gerekmiyor. Yalnızca `isActive: true` /
+`isPublished: true` kayıtlar listeleniyor; gizli kayıtların detay sayfası zaten
+404 verdiği için haritaya konmaları kırık adres bildirmek olurdu.
+
+> ⚠️ **`robots.txt` bir güvenlik önlemi DEĞİLDİR.** Yalnızca iyi niyetli
+> tarayıcılara "girme" der. Panelin gerçek koruması `proxy.ts` + admin
+> layout'taki oturum kontrolüdür (Faz 3). Buradaki kayıt sadece panel
+> adreslerinin arama sonuçlarına düşmemesi için.
+
+`metadataBase` kök layout'a eklendi — onsuz Next.js göreli metadata adreslerini
+mutlak hale getiremiyor ve derlemede uyarı veriyor.
+
+### ⚠️ ÇÖZÜLMEMİŞ: Ziyaretçi Sayfaları Statikleşemiyor
+
+**Plan:** `force-dynamic` kaldırılıp sayfalar önbelleğe alınacak, admin
+action'larındaki `revalidatePath` ile tazelenecekti.
+
+**Yapılanlar:** `force-dynamic` üç ziyaretçi sayfasından kaldırıldı; detay
+rotaları için eksik olan tazeleme çağrıları eklendi:
+`revalidatePath("/ekip/[slug]", "page")` ve `revalidatePath("/projeler/[slug]", "page")`.
+(`"page"` tipi o rotaya uyan **tüm** slug'ları kapsar.)
+
+**Sonuç: sayfalar yine dinamik.** Build çıktısında `/` hâlâ `ƒ`.
+
+**Sebep:** Kök layout (`app/layout.tsx`) temayı çerezden okuyor
+(`getTheme()` → `cookies()`). **`cookies()` dinamik bir API'dir ve altındaki
+tüm rotaları dinamik yapar** — ziyaretçi sayfaları dahil. Yani engel
+ziyaretçi sayfalarında değil, kök layout'ta.
+
+**Denenmeyen çözüm ve neden denenmediği:** Tema sınıfı `<html>` yerine admin
+layout'undaki bir `<div>`'e taşınabilir; `@custom-variant dark (&:is(.dark *))`
+tanımı buna izin verir. **Ama `<body>` o sarmalayıcının dışında kalır** —
+koyu temada gövde arka planı açık kalıp kenarlarda beyaz alanlar oluşabilir.
+Ayrıca `Toaster` kök layout'ta ve o da sarmalayıcının dışında kalırdı.
+Tema sistemi bu projede **iki kez kırıldı** (bkz. Faz 3 notları: script hatası,
+hydration uyuşmazlığı); görsel doğrulama yapılamadan dokunulmadı.
+
+**Değerlendirilen seçenekler:**
+1. **Olduğu gibi bırak.** Sorgular hızlı, site küçük. Asıl Lighthouse
+   kazanımları görsel/font tarafında. Risk sıfır.
+2. **Tema sınıfını admin sarmalayıcısına taşı.** `Toaster` da admin ve login'e
+   ayrı ayrı taşınır (ziyaretçi tarafı toast kullanmıyor — doğrulandı).
+   Tarayıcıda koyu tema görsel kontrolü şart.
+3. **Çoklu kök layout** (route group başına ayrı `<html>`). En temizi ama en
+   büyük yeniden yapılandırma.
+
+### ✅ VERİLEN KARAR (21.07.2026 - 14:15): Seçenek 1 — dokunulmuyor
+
+Kullanıcı ve ajan hemfikir: **ziyaretçi sayfaları dinamik kalacak.**
+
+**Gerekçe:** Bu ölçekte kazanç mütevazı (birkaç hızlı Prisma sorgusu), risk ise
+gerçek — tema sistemi projede iki kez kırıldı ve düzeltmenin görsel doğrulaması
+tarayıcı gerektiriyor. Site müşteri sunumuna girdiği için kırılganlık yaratacak
+bir değişiklik bilinçli olarak ertelendi.
+
+> **Bu bir eksiklik değil, tartılmış bir karardır.** İleride gerçek trafik altında
+> performans sorunu görülürse seçenek 2 veya 3'e dönülebilir; `revalidatePath`
+> altyapısı zaten hazır, tek engel çerez okuması. Yeniden açmadan önce bu
+> bölümün tamamını okuyun.
+
+> Kod içindeki yorumlar bu durumu doğru anlatacak şekilde düzeltildi —
+> "önbelleğe alınır" yazan yorumlar gerçeği yansıtmıyordu.
+
+### Test Sonuçları (21.07.2026 - 14:05)
+
+| Test | Sonuç |
+| :--- | :--- |
+| `npm run build` | ✅ Temiz, 20 rota (`robots.txt` + `sitemap.xml` statik) |
+| `npx tsc --noEmit` | ✅ |
+| `/robots.txt` çıktısı | ✅ Admin, login ve api kapalı; sitemap bildirildi |
+| `/sitemap.xml` çıktısı | ✅ 5 adres (ana sayfa + 2 ekip + 2 proje) |
+| **Gizli kayıtlar sitemap'te** | ✅ **0** — dışlanıyor |
+| Admin adresleri sitemap'te | ✅ 0 |
+| Ziyaretçi sayfaları statik mi? | ❌ Hayır — yukarıdaki tema çerezi engeli |
+
+Gizli kayıt testi yine geçici kayıt oluşturup silinerek yapıldı.
 
 ---
 
