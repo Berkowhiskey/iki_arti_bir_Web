@@ -15,16 +15,26 @@ import { ArchMotifs } from "./arch-motifs";
  * `site-header.tsx`'teki bar eşiği hero'nun gerçek yüksekliğini ölçtüğü için
  * orada elle bir şey yapmak gerekmez.
  *
- * İlk denemede 220'ydi: kapılar 98vh'de açılıp bitiyor, sahne 120vh'de
- * çözülüyordu — arada **22vh boyunca hiçbir şey olmayan beyaz ekran** kalıyor
- * ve bekleme uzun hissettiriyordu. 200'e indirilip kapı bitişi sona yaklaştırıldı.
+ * İki turda kısaldı (220 → 200 → 175):
+ *
+ * 1. **220:** kapılar 98vh'de bitiyor, sahne 120vh'de çözülüyordu → 22vh boş
+ *    beyaz ekran.
+ * 2. **200:** boş tail 10vh'ye indi ama şikâyet sürdü. Ölçünce asıl sorun
+ *    görüldü: **tail değil.** Ekran, kapılar bitmeden çok önce ağırlıklı olarak
+ *    beyaza dönüyor — kapı yolunun %70'inden sonra ekranın çoğu zaten beyaz.
+ *    Bu "çoğunlukla beyaz" faz 28vh sürüyordu.
+ * 3. **175:** kapı bitişi sahnenin çözülmesine yaklaştırıldı (0.97). Çoğunlukla
+ *    beyaz faz 18vh'ye, boş tail 2vh'ye indi; kapı hızı yalnızca %13 arttı.
+ *
+ * ⚠️ Bu değeri ayarlarken **tail'e değil, "ekranın çoğu beyaz" fazına** bakın:
+ * kapı yolunun son üçte biri zaten beyaz görünür.
  */
-const HERO_VH = 200;
+const HERO_VH = 175;
 
 /**
  * Sticky sahnenin çözüldüğü nokta (ham scroll ilerlemesi cinsinden).
  * Sahne, section'ın altı ekranın altına gelene kadar çakılı kalır:
- * (200 - 100) / 200 = 0.5.
+ * (175 - 100) / 175 ≈ 0.571.
  */
 const STICKY_END = 1 - 100 / HERO_VH;
 
@@ -85,18 +95,18 @@ export function HeroSection({ slogan, subSlogan, latestProject }: HeroSectionPro
    * Mobil aralıklar Faz 2'deki değerlerle aynı bırakıldı — o taraftaki his
    * değişmesin diye.
    *
-   * Masaüstü aralıkları (sticky yol = 100vh cinsinden):
-   *   ipucu    0 → 12vh · modal 6 → 28vh · kapılar 30 → 90vh · beyaz 90 → 100vh
+   * Masaüstü aralıkları (sticky yol = 75vh cinsinden):
+   *   ipucu 0 → 9vh · modal 4 → 20vh · kapılar 21 → 73vh · beyaz 73 → 75vh
    */
-  const modalOpacity = useTransform(p, doorMode ? [0.06, 0.28] : [0, 0.45], [1, 0]);
+  const modalOpacity = useTransform(p, doorMode ? [0.05, 0.26] : [0, 0.45], [1, 0]);
   const modalScale = useTransform(
     p,
-    doorMode ? [0.06, 0.3] : [0, 0.6],
+    doorMode ? [0.05, 0.28] : [0, 0.6],
     [1, doorMode ? 0.88 : 0.82]
   );
   const modalY = useTransform(
     p,
-    doorMode ? [0.06, 0.3] : [0, 0.6],
+    doorMode ? [0.05, 0.28] : [0, 0.6],
     [0, doorMode ? 48 : 60]
   );
   const scrollHintOpacity = useTransform(p, doorMode ? [0, 0.12] : [0, 0.15], [1, 0]);
@@ -105,11 +115,12 @@ export function HeroSection({ slogan, subSlogan, latestProject }: HeroSectionPro
    * Kapı kanatları — piksel değil **yüzde**. Yüzde elemanın kendi genişliğine
    * göre çözülür, bu yüzden `w-1/2` (masaüstü) için tek ifade yeterli.
    *
-   * Bitiş 0.90'a çekildi (önce 0.82): kapılar sahnenin sonuna daha yakın
-   * tamamlanıyor, arkasındaki beyaz bekleme 22vh'den 10vh'ye indi.
+   * Bitiş 0.97: kapılar sahne çözülmeden hemen önce tamamlanıyor. Tam 1.0
+   * yapılmadı — son karede kenarda bir piksellik şerit kalma ihtimaline karşı
+   * küçük bir pay bırakıldı.
    */
-  const leftPanelX = useTransform(p, [0.3, 0.9], ["0%", "-100%"]);
-  const rightPanelX = useTransform(p, [0.3, 0.9], ["0%", "100%"]);
+  const leftPanelX = useTransform(p, [0.28, 0.97], ["0%", "-100%"]);
+  const rightPanelX = useTransform(p, [0.28, 0.97], ["0%", "100%"]);
 
   /**
    * Alt bileşenler (`GridOverlay`, `ArchMotifs`) kendi içlerinde [0,1] aralığı
@@ -117,7 +128,7 @@ export function HeroSection({ slogan, subSlogan, latestProject }: HeroSectionPro
    * kapılar açılmaya başlamadan önce tam boyuna ulaşsın, kapı kayarken hâlâ
    * uzuyor görünmesin.
    */
-  const contentProgress = useTransform(p, doorMode ? [0, 0.34] : [0, 1], [0, 1], {
+  const contentProgress = useTransform(p, doorMode ? [0, 0.32] : [0, 1], [0, 1], {
     clamp: true,
   });
 
@@ -126,7 +137,7 @@ export function HeroSection({ slogan, subSlogan, latestProject }: HeroSectionPro
     ? {}
     : { scale: modalScale, opacity: modalOpacity, y: modalY };
 
-  // Section: masaüstünde uzun bir "koşu yolu" (200vh), içindeki sahne ekrana
+  // Section: masaüstünde uzun bir "koşu yolu" (175vh), içindeki sahne ekrana
   // çakılıp kapılar bu yol boyunca açılır. Mobilde tek ekran.
   //
   // ⚠️ `overflow-hidden` section'da DEĞİL, sticky sahnenin üzerinde. Bir atada
@@ -134,13 +145,13 @@ export function HeroSection({ slogan, subSlogan, latestProject }: HeroSectionPro
   // ⚠️ Arka plan `bg-white` — `bg-background` DEĞİL. Koyu temada `--background`
   //    siyaha döner ve kapılar açılınca koyu bir boşluk görünürdü.
   // ⚠️ `md:motion-reduce:h-screen`: hareket azaltma tercihinde koşu yolu CSS ile
-  //    kaldırılır. JS ile yapmak hidrasyondan sonra 220vh→100vh sıçraması
+  //    kaldırılır. JS ile yapmak hidrasyondan sonra 175vh→100vh sıçraması
   //    yaratırdı — tam olarak korumaya çalıştığımız kullanıcıda.
   return (
     <section
       id="anasayfa"
       ref={containerRef}
-      className="relative h-screen w-full bg-white outline-none md:h-[200vh] md:motion-reduce:h-screen"
+      className="relative h-screen w-full bg-white outline-none md:h-[175vh] md:motion-reduce:h-screen"
       aria-label="Giriş"
     >
       {/* Kapı sahnesi — masaüstünde ekrana çakılı kalan tek kare */}

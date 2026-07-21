@@ -7,7 +7,7 @@ mimari kararları kaydeder. Her faz sonunda `CLAUDE.md` §6 kuralı gereği gün
 
 ## Güncel Durum
 
-**Son güncelleme: 21.07.2026 - 16:44**
+**Son güncelleme: 21.07.2026 - 17:20**
 
 - ✅ **Faz 1 — Altyapı ve Veritabanı Mimarisi: TAMAMLANDI**
 - ✅ **Faz 2 — Ziyaretçi Arayüzü ve Framer Motion: TAMAMLANDI**
@@ -23,6 +23,109 @@ mimari kararları kaydeder. Her faz sonunda `CLAUDE.md` §6 kuralı gereği gün
   - ⬜ 5.2c OpenGraph genişletme, JSON-LD, Lighthouse ölçümü (kullanıcı erteledi)
 - ✅ **Faz 6 — Görsel İyileştirmeler: TAMAMLANDI ve onaylandı**
 - ✅ **Faz 6.1 — Kapı temposu + ekip sosyal medya: TAMAMLANDI**
+- ✅ **Faz 6.2 — Beyaz alan doğru teşhis edilip çözüldü**
+
+---
+
+## 21.07.2026 - 17:05 — "Beyaz Alan" Sorununun Doğru Teşhisi
+
+Kullanıcı 6.1'deki kısaltmadan sonra da "beyaz hâlâ uzun" dedi ve isabetli bir
+tahminde bulundu: *"sanki Hakkımızda section'ının geç girmesinden kaynaklı."*
+
+### ⚠️ Önceki İki Denemede Yanlış Metriğe Bakılmıştı
+
+İlk iki turda **boş beyaz tail** ölçüldü ve küçültüldü (22vh → 10vh). Ama
+şikâyet sürdü. Ölçüm genişletilince gerçek sebep görüldü:
+
+> **Ekran, kapılar bitmeden çok önce ağırlıklı olarak beyaza dönüyor.**
+> Kapı yolunun %70'i geçildiğinde ekranın çoğu zaten beyazdır. Bu
+> "çoğunlukla beyaz" faz **28vh** sürüyordu — boş tail'in neredeyse üç katı.
+
+| Metrik | 220vh | 200vh | **175vh** |
+| :--- | ---: | ---: | ---: |
+| Boş tail | 22vh | 10vh | **2vh** |
+| **Çoğunlukla beyaz** | ~40vh | 28vh | **18vh** |
+| Kapı yolu | 67vh | 60vh | 52vh |
+| Toplam hero | 220vh | 200vh | **175vh** |
+
+**Çözüm:** `HERO_VH` 175, kapı bitişi `0.97` (sahne çözülmeden hemen önce).
+Tam `1.0` yapılmadı — son karede kenarda bir piksellik şerit kalma ihtimaline
+karşı pay bırakıldı.
+
+> ⚠️ **Bu değeri ileride ayarlarken tail'e değil, "ekranın çoğu beyaz" fazına
+> bakın.** Kapı yolunun son üçte biri zaten beyaz görünür; tail'i sıfırlamak
+> tek başına sorunu çözmez. Ölçüm formülü: `sticky_yol − (kapı_başı + 0.7 × kapı_yolu)`.
+
+### Değerlendirilip Seçilmeyen: Hakkımızda'yı Kapıların Arkasına Koymak
+
+Gerçek perde efekti (kapılar açılınca arkadan beyaz değil, doğrudan Hakkımızda
+içeriği çıkar) teknik olarak mümkün — ama üç bedeli var ve kullanıcı bu
+gerekçelerle koşu yolunu kısaltmayı tercih etti:
+
+1. **Hakkımızda'nın giriş animasyonu kaybolur.** `reveal.tsx`
+   `viewport={{ once: true }}` kullanıyor; bölüm kapıların arkasındayken
+   viewport'a girmiş sayılır, animasyon kullanıcı görmeden tetiklenip biter ve
+   geri alınamaz.
+2. Menüdeki aktif bölüm vurgusu (IntersectionObserver) şaşırabilir.
+3. Yapısal değişiklik — negatif margin + z-index katmanlaması gerekir.
+
+> Bu, Faz 6 planında `position: fixed` alternatifinin reddedilme gerekçesiyle
+> **aynı** sorundur. Kayıt için: bu mimaride "içeriği perdenin arkasına koymak"
+> her zaman `once: true` bedelini doğurur.
+
+### Doğrulama (21.07.2026 - 17:05)
+
+| Test | Sonuç |
+| :--- | :--- |
+| `npx tsc --noEmit` | ✅ |
+| `npx eslint` | ✅ Kendi kodumuzda 0 (2 devralınmış) |
+| `175vh` uygulandı / eski değer kalmadı | ✅ |
+| Sticky sahne + anasayfa HTTP 200 | ✅ |
+
+---
+
+## 21.07.2026 - 17:20 — Kalan İşler Denetimi
+
+Faz 6.2 sonrası proje taranıp gerçekten neyin eksik olduğu çıkarıldı.
+**Aşağıdakiler tahmin değil, kod/çıktı ile doğrulandı.**
+
+### 🔴 Yayın Öncesi Zorunlu
+
+| # | Konu | Durum |
+| :-- | :--- | :--- |
+| 1 | `NEXT_PUBLIC_SITE_URL` | Hâlâ `http://localhost:3000` — sitemap erişilemez adres bildirir |
+| 2 | **Favicon** | `app/favicon.ico` **25931 bayt, 20.07 10:49** — bu `create-next-app` varsayılanı. Tarayıcı sekmesinde muhtemelen **Next.js logosu** görünüyor |
+| 3 | Production `AUTH_SECRET` | Dev'dekiyle aynı olmamalı |
+| 4 | Veritabanı | XAMPP geliştirme içindir; sunucuda kalıcı MySQL servisi + yedekleme gerekir |
+
+### 🟡 Ucuz ve Görünür Kazanç
+
+**404 sayfası varsayılan ve İNGİLİZCE.** Doğrulandı — `/olmayan-sayfa`
+şu an `404: This page could not be found.` döndürüyor. Türkçe bir müşteri
+sitesinde adresi yanlış yazan ziyaretçi İngilizce sistem sayfasıyla karşılaşıyor
+ve geri dönüş bağlantısı yok. `app/not-found.tsx` yok.
+
+`app/error.tsx` de yok — beklenmedik hatada markasız varsayılan ekran çıkar.
+
+`loading.tsx` yok; detay sayfalarına geçişte boş bekleme oluyor.
+
+### 🟢 Faz 5'ten Bilinçli Ertelenenler
+
+OpenGraph paylaşım görselleri · JSON-LD yapısal veri · Lighthouse ölçümü.
+
+### ⚪ Özellik Fikirleri (kullanıcıya sunuldu)
+
+İletişim formu (mail gönderimi altyapısı gerekir — şu an iletişim bölümü
+yalnızca bilgi gösteriyor) · proje kategorisi filtreleme · galeri lightbox ·
+sahipsiz yükleme dosyalarını temizleme komutu.
+
+### Teknik Borç
+
+- `npm audit`: **0 kritik, 0 yüksek, 5 orta** (`next`, `prisma`, `postcss`,
+  `@prisma/dev`, `@hono/node-server` — çoğu geçişli/dev bağımlılığı)
+- `@types/node` hâlâ `^20`, Node 24 çalışıyor
+- Test altyapısı yok (vitest/jest konfigü bulunmadı)
+- 2 devralınmış ESLint hatası (üretilen Shadcn dosyaları)
 
 ---
 
@@ -30,6 +133,9 @@ mimari kararları kaydeder. Her faz sonunda `CLAUDE.md` §6 kuralı gereği gün
 
 Kullanıcı Faz 6'yı tarayıcıda onayladı (sıra, beyaz zemin, mobil davranış,
 slider — hepsi doğru). İki ek istek geldi.
+
+> **Ek not (21.07.2026 - 17:05):** Bu turdaki kısaltma (220→200) **yanlış yeri
+> hedeflemişti** — ayrıntı ve doğru teşhis için bir sonraki girdiye bakın.
 
 ### 1. Kapı Sonrası Beyaz Bekleme Kısaltıldı
 

@@ -146,6 +146,19 @@
 > başlatın.** Turbopack üretilen client'ı önbelleğe alıyor; aksi halde yeni
 > alanlar `undefined` gelir ve özellik "çalışmıyor" sanılır.
 >
+> **21.07.2026 - 17:05 — Faz 6.2: Beyaz alan doğru teşhis edildi.**
+> `HERO_VH` 200 → **175**, kapı bitişi **0.97**. Kullanıcı onayladı.
+>
+> ⚠️ **Hero temposunu ayarlarken "boş tail"e değil, "ekranın çoğu beyaz"
+> fazına bakın.** İlk iki turda yanlış metrik ölçüldü: tail 22→10vh indirildiği
+> hâlde şikâyet sürdü, çünkü ekran kapılar bitmeden çok önce beyaza dönüyor.
+> Ölçüm: `sticky_yol − (kapı_başı + 0.7 × kapı_yolu)`. 28vh → 18vh.
+>
+> ⚠️ **"İçeriği perdenin arkasına koyma" fikri kalıcı olarak reddedildi.**
+> `reveal.tsx` `viewport={{ once: true }}` kullandığı için perdenin arkasındaki
+> bölümün giriş animasyonu kullanıcı görmeden tetiklenip biter ve geri alınamaz.
+> Bu, `position: fixed` alternatifinin reddedilme gerekçesiyle **aynı** sorundur.
+>
 > ⚠️ **Açık güvenlik borcu (yarı kapandı — 21.07.2026 - 10:45):** Ceren'in şifresi
 > panelden değiştirildi ✅ · **Cansın'ın şifresi hâlâ `DegistirBeni2026!`** ⚠️
 > `/admin/account` ekranından değiştirilmeli — `db:seed` ile artık değiştirilemez.
