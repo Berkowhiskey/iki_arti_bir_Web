@@ -15,6 +15,8 @@ export default function NewTeamMemberPage() {
         order: "0",
         isActive: true,
         imageUrl: null,
+        instagramUrl: "",
+        linkedinUrl: "",
       }}
     />
   );

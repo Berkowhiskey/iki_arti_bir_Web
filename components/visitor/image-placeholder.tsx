@@ -46,6 +46,12 @@ type PersonImageProps = {
   name: string;
   variant?: keyof typeof PERSON_VARIANTS;
   className?: string;
+  /**
+   * `next/image` boyut ipucu. Varsayılan iki kolonluk yerleşime göredir;
+   * kart genişliği farklıysa (örn. 3'lü slider) geçilmelidir, yoksa tarayıcı
+   * gereğinden büyük dosya indirir.
+   */
+  sizes?: string;
 };
 
 export function PersonImage({
@@ -53,6 +59,7 @@ export function PersonImage({
   name,
   variant = "neutral",
   className = "",
+  sizes = "(max-width: 768px) 100vw, 50vw",
 }: PersonImageProps) {
   if (src) {
     return (
@@ -61,7 +68,7 @@ export function PersonImage({
           src={src}
           alt={name}
           fill
-          sizes="(max-width: 768px) 100vw, 50vw"
+          sizes={sizes}
           className="object-cover"
         />
       </div>

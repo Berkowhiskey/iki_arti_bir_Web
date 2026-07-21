@@ -76,12 +76,14 @@ export function AboutForm({ defaultValues }: { defaultValues: AboutValues }) {
       </Field>
 
       <ImageField
-        label="Bölüm görseli"
+        label="Logo"
         value={imageUrl}
         onChange={(url) =>
           setValue("imageUrl", url, { shouldDirty: true, shouldValidate: true })
         }
-        hint="İsteğe bağlı. JPG, PNG veya WEBP · en fazla 5 MB."
+        aspect="1/1"
+        fit="contain"
+        hint="Ana sayfada metnin solunda gösterilir. Kare veya kareye yakın, saydam zeminli (PNG/WEBP) logo en iyi sonucu verir · en fazla 5 MB."
       />
       {errors.imageUrl?.message && (
         <p role="alert" className="text-xs text-destructive">

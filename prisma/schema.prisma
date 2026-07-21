@@ -84,7 +84,11 @@ model TeamMember {
   bio        String     @db.Text
   imageUrl   String?
   /// Beton (mühendislik) mi meşe (mimarlık) teması mı kullanılacak.
+  /// Panelde "Tema" olarak görünür; enum adları geçmişten geliyor.
   discipline Discipline @default(DIGER)
+  /// Kişisel sosyal medya adresleri — yalnızca detay sayfasında gösterilir.
+  instagramUrl String?
+  linkedinUrl  String?
   /// Ziyaretçi sayfasındaki görüntülenme sırası.
   order      Int        @default(0)
   isActive   Boolean    @default(true)

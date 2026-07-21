@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, runAction, type ActionResult } from "@/lib/actions";
-import { teamSchema, slugify } from "@/lib/validations";
+import { teamSchema, slugify, emptyToNull } from "@/lib/validations";
 import { deleteUpload } from "@/lib/uploads";
 import { uniqueSlug } from "@/lib/unique-slug";
 
@@ -50,12 +50,20 @@ export async function createTeamMember(input: unknown): Promise<ActionResult> {
       };
     }
 
-    const { order, slug, ...rest } = parsed.data;
+    const { order, slug, instagramUrl, linkedinUrl, ...rest } = parsed.data;
     // Adres boş bırakıldıysa isimden üretilir.
     const finalSlug = await uniqueTeamSlug(slugify(slug || rest.name));
 
     await prisma.teamMember.create({
-      data: { ...rest, slug: finalSlug, order: Number(order) },
+      data: {
+        ...rest,
+        slug: finalSlug,
+        order: Number(order),
+        // Boş bırakılan sosyal medya alanları DB'ye null yazılır; boş string
+        // olsaydı detay sayfası "bağlantı var" sanıp boş ikon gösterirdi.
+        instagramUrl: emptyToNull(instagramUrl),
+        linkedinUrl: emptyToNull(linkedinUrl),
+      },
     });
 
     revalidateTeam();
@@ -92,12 +100,18 @@ export async function updateTeamMember(
       return { ok: false, message: "Ekip üyesi bulunamadı." };
     }
 
-    const { order, slug, ...rest } = parsed.data;
+    const { order, slug, instagramUrl, linkedinUrl, ...rest } = parsed.data;
     const finalSlug = await uniqueTeamSlug(slugify(slug || rest.name), id);
 
     await prisma.teamMember.update({
       where: { id },
-      data: { ...rest, slug: finalSlug, order: Number(order) },
+      data: {
+        ...rest,
+        slug: finalSlug,
+        order: Number(order),
+        instagramUrl: emptyToNull(instagramUrl),
+        linkedinUrl: emptyToNull(linkedinUrl),
+      },
     });
 
     // Fotoğraf değiştiyse eskisini diskten sil.

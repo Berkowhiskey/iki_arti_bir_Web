@@ -40,6 +40,7 @@ export function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const [isScrolledPastHero, setIsScrolledPastHero] = useState(false);
+  const [heroThreshold, setHeroThreshold] = useState<number | null>(null);
   const [activeId, setActiveId] = useState<string>("anasayfa");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -48,14 +49,58 @@ export function SiteHeader() {
   const isHome = pathname === "/";
   const isVisible = !isHome || isScrolledPastHero;
 
-  // Hero'nun büyük bölümü geçilene kadar bar görünmez; geçildikten sonra
-  // kaydırma yönünden bağımsız olarak kalıcıdır.
+  /**
+   * Bar'ın belireceği scroll konumu, hero'nun **gerçek yüksekliğinden** türetilir.
+   *
+   * ⚠️ Önceden sabit `window.innerHeight * 0.85` kullanılıyordu. Hero tek ekran
+   * olduğu sürece bu doğru çalışıyordu; Faz 6'da kapı efekti için hero 220vh'ye
+   * uzayınca aynı eşik kullanıcı hero'nun **%38'indeyken** tetiklenmeye başladı —
+   * kapılar açılmadan bar düşüyor ve hero'nun tam ekran kompozisyonu bozuluyordu.
+   *
+   * Bu bağ hero'ya hiç referans vermediği için grep ile bulunamaz; hero'nun
+   * yüksekliğini değiştirirken burayı kontrol edin.
+   */
+  useEffect(() => {
+    // Detay sayfalarında eşik hiç kullanılmıyor (`isVisible` zaten true);
+    // burada state sıfırlamak gereksiz bir render turu doğururdu.
+    if (!isHome) return;
+
+    const hero = document.getElementById("anasayfa");
+    if (!hero) return;
+
+    const measure = () => {
+      const heroTop = hero.getBoundingClientRect().top + window.scrollY;
+      // Sahnenin çözülmesine ~0.25 ekran kala, yani kapılar tam açıldığı anda.
+      const derived =
+        heroTop + hero.offsetHeight - window.innerHeight * 1.25;
+      // Hero tek ekransa (mobil / hareket azaltma) formül negatife düşer ve bar
+      // en tepede görünürdü; eski davranışı taban olarak koruyoruz.
+      setHeroThreshold(Math.max(derived, window.innerHeight * 0.85));
+    };
+
+    measure();
+
+    // Hero yüksekliği vh tabanlı — döndürme ve pencere boyutu onu değiştirir.
+    const observer = new ResizeObserver(measure);
+    observer.observe(hero);
+    window.addEventListener("resize", measure);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [isHome]);
+
+  // Hero geçilene kadar bar görünmez; geçildikten sonra kaydırma yönünden
+  // bağımsız olarak kalıcıdır.
   //
   // Not: Önceden aşağı kaydırırken gizlenip yukarı kaydırırken geri gelen
   // "hide-on-scroll" deseni vardı. Tek sayfalık bu sitede ziyaretçi sürekli
   // aşağı gezindiği için bar tam ihtiyaç anında kayboluyordu — kaldırıldı.
   useMotionValueEvent(scrollY, "change", (latest) => {
-    setIsScrolledPastHero(latest >= window.innerHeight * 0.85);
+    // Ölçüm henüz yapılmadıysa eski sabite düş — bar asla erişilemez kalmasın.
+    const threshold = heroThreshold ?? window.innerHeight * 0.85;
+    setIsScrolledPastHero(latest >= threshold);
   });
 
   // Detay sayfalarında hiçbir menü öğesi aktif görünmemeli. Bunu effect

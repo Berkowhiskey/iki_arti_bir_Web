@@ -25,10 +25,17 @@ type TeamFormProps = {
   memberId?: number;
 };
 
-const DISCIPLINE_OPTIONS = [
-  { value: "MIMARLIK", label: "Mimarlık (meşe teması)" },
-  { value: "MUHENDISLIK", label: "Mühendislik (beton teması)" },
-  { value: "DIGER", label: "Diğer (nötr tema)" },
+/**
+ * Tema seçenekleri.
+ *
+ * ⚠️ `value`'lar veritabanındaki `Discipline` enum'undan gelir ve
+ * **değiştirilemez**; yalnızca etiketler palet adlarına çevrildi. Alan bir
+ * meslek bilgisi taşımıyor, sadece kartın hangi renkle çizileceğini belirliyor.
+ */
+const THEME_OPTIONS = [
+  { value: "MUHENDISLIK", label: "Beton" },
+  { value: "MIMARLIK", label: "Meşe" },
+  { value: "DIGER", label: "Antrasit" },
 ] as const;
 
 export function TeamForm({ defaultValues, memberId }: TeamFormProps) {
@@ -125,10 +132,10 @@ export function TeamForm({ defaultValues, memberId }: TeamFormProps) {
       </Field>
 
       <Field
-        label="Disiplin"
+        label="Tema"
         htmlFor="discipline"
         error={errors.discipline?.message}
-        hint="Kartın hangi renk temasıyla gösterileceğini belirler; sıralamadan bağımsızdır."
+        hint="Kartın ana sayfada hangi renkle gösterileceğini belirler; sıralamadan bağımsızdır."
       >
         <Select
           value={discipline}
@@ -143,7 +150,7 @@ export function TeamForm({ defaultValues, memberId }: TeamFormProps) {
             <SelectValue placeholder="Seçin" />
           </SelectTrigger>
           <SelectContent>
-            {DISCIPLINE_OPTIONS.map((option) => (
+            {THEME_OPTIONS.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
               </SelectItem>
@@ -166,6 +173,40 @@ export function TeamForm({ defaultValues, memberId }: TeamFormProps) {
           {errors.imageUrl.message}
         </p>
       )}
+
+      {/* Sosyal medya — kişiye ait hesaplar. İletişim ayarlarındaki firma
+          hesaplarından ayrıdır ve yalnızca detay sayfasında gösterilir. */}
+      <div className="grid gap-6 sm:grid-cols-2">
+        <Field
+          label="Instagram"
+          htmlFor="instagramUrl"
+          error={errors.instagramUrl?.message}
+          hint="İsteğe bağlı. Boş bırakılırsa ikon gösterilmez."
+        >
+          <Input
+            id="instagramUrl"
+            type="url"
+            placeholder="https://instagram.com/kullaniciadi"
+            aria-invalid={Boolean(errors.instagramUrl)}
+            {...register("instagramUrl")}
+          />
+        </Field>
+
+        <Field
+          label="LinkedIn"
+          htmlFor="linkedinUrl"
+          error={errors.linkedinUrl?.message}
+          hint="İsteğe bağlı."
+        >
+          <Input
+            id="linkedinUrl"
+            type="url"
+            placeholder="https://linkedin.com/in/kullaniciadi"
+            aria-invalid={Boolean(errors.linkedinUrl)}
+            {...register("linkedinUrl")}
+          />
+        </Field>
+      </div>
 
       <Field
         label="Adres (slug)"

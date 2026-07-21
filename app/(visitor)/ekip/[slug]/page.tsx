@@ -47,6 +47,20 @@ export default async function TeamMemberPage({ params }: PageProps) {
   const theme = DISCIPLINE_THEME[member.discipline];
   const paragraphs = member.bio.split("\n\n").filter(Boolean);
 
+  /**
+   * Yalnızca doldurulmuş hesaplar listelenir; boş alanlar hiç render edilmez.
+   *
+   * Marka ikonu yerine metin kullanılıyor: Lucide v1 marka ikonlarını
+   * kaldırdı ve site zaten bu tipografik dili kullanıyor
+   * (bkz. `contact-section.tsx` — "INSTAGRAM ↗").
+   */
+  const socials = [
+    { label: "Instagram", url: member.instagramUrl },
+    { label: "LinkedIn", url: member.linkedinUrl },
+  ].filter((social): social is { label: string; url: string } =>
+    Boolean(social.url)
+  );
+
   // Diğer ekip üyeleri — sayfanın altındaki geçiş şeridi için.
   const others = (await getTeamMembers()).filter((m) => m.slug !== member.slug);
 
@@ -113,6 +127,28 @@ export default async function TeamMemberPage({ params }: PageProps) {
               </p>
             </Reveal>
           ))}
+
+          {/* Sosyal medya — yalnızca en az biri doldurulmuşsa gösterilir.
+              Kartlarda gösterilmiyor: kartın tamamı zaten tıklanabilir, içine
+              ayrı bağlantılar koymak ziyaretçiyi şaşırtırdı. */}
+          {socials.length > 0 && (
+            <Reveal delay={0.1 + paragraphs.length * 0.08}>
+              <div className="mt-10 flex gap-8 border-t border-beton-200 pt-8">
+                {socials.map((social) => (
+                  <a
+                    key={social.label}
+                    href={social.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`${member.name} — ${social.label} (yeni sekmede açılır)`}
+                    className="font-mono text-[11px] tracking-[0.2em] text-beton-500 transition-colors hover:text-mese-700"
+                  >
+                    {social.label.toLocaleUpperCase("tr-TR")} ↗
+                  </a>
+                ))}
+              </div>
+            </Reveal>
+          )}
         </div>
       </div>
 

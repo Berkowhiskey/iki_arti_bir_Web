@@ -15,6 +15,15 @@ type ImageFieldProps = {
   hint?: string;
   /** Önizleme kutusunun en-boy oranı. Portre görseller için "3/4". */
   aspect?: "16/9" | "3/4" | "1/1";
+  /**
+   * Görselin kutuya nasıl oturacağı. Fotoğraflar için `cover` (kırpar),
+   * logolar için `contain` (kırpmaz, boşluk bırakır).
+   *
+   * ⚠️ **Ziyaretçi tarafındaki değerle aynı olmalı.** Panelde `cover`,
+   * sitede `contain` kullanılırsa yönetici burada düzgün gördüğü logonun
+   * sitede kırpıldığını fark edemez.
+   */
+  fit?: "cover" | "contain";
 };
 
 const ASPECT_CLASS = {
@@ -40,6 +49,7 @@ export function ImageField({
   onChange,
   hint,
   aspect = "16/9",
+  fit = "cover",
 }: ImageFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isPending, startTransition] = useTransition();
@@ -87,7 +97,7 @@ export function ImageField({
             alt=""
             fill
             sizes="384px"
-            className="object-cover"
+            className={fit === "contain" ? "object-contain p-4" : "object-cover"}
           />
         ) : (
           <div className="flex h-full items-center justify-center text-xs text-muted-foreground">

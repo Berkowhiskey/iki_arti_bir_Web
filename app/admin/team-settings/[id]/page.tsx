@@ -35,6 +35,9 @@ export default async function EditTeamMemberPage({
         order: String(member.order),
         isActive: member.isActive,
         imageUrl: member.imageUrl,
+        // Form boş string bekler; DB null tutar (emptyToNull ile geri çevrilir).
+        instagramUrl: member.instagramUrl ?? "",
+        linkedinUrl: member.linkedinUrl ?? "",
       }}
     />
   );

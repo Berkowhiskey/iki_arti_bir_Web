@@ -55,7 +55,7 @@ export default async function TeamSettingsPage() {
                 <TableHead className="w-16">Foto</TableHead>
                 <TableHead>İsim</TableHead>
                 <TableHead>Unvan</TableHead>
-                <TableHead>Disiplin</TableHead>
+                <TableHead>Tema</TableHead>
                 <TableHead className="w-16 text-center">Sıra</TableHead>
                 <TableHead className="w-24">Durum</TableHead>
                 <TableHead className="w-24 text-right">İşlem</TableHead>

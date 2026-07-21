@@ -174,12 +174,20 @@ export const teamSchema = z.object({
     .min(1, "Biyografi boş bırakılamaz.")
     .max(3000, "Biyografi en fazla 3000 karakter olabilir."),
   /// Ziyaretçi sayfasındaki renk temasını belirler — sıralamadan bağımsız.
+  /// Panelde "Tema" olarak görünür (Beton / Meşe / Antrasit); enum değerleri
+  /// veritabanı uyumu için korundu.
   discipline: z.enum(["MUHENDISLIK", "MIMARLIK", "DIGER"], {
-    message: "Disiplin seçin.",
+    message: "Tema seçin.",
   }),
   order: orderValue,
   isActive: z.boolean(),
   imageUrl: uploadPath,
+  /**
+   * Kişisel sosyal medya adresleri — yalnızca detay sayfasında gösterilir.
+   * İletişim ayarlarındaki firma hesaplarından ayrıdır.
+   */
+  instagramUrl: optional(urlValue("Instagram adresi")),
+  linkedinUrl: optional(urlValue("LinkedIn adresi")),
 });
 
 export type TeamValues = z.infer<typeof teamSchema>;

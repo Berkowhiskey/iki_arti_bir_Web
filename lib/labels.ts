@@ -12,8 +12,16 @@ export const CATEGORY_LABELS = {
   IC_DIZAYN: "İç Dizayn",
 } as const;
 
+/**
+ * Ekip üyesinin görsel teması — admin panelinde gösterilen adlar.
+ *
+ * ⚠️ Anahtarlar veritabanındaki `Discipline` enum'undan gelir ve
+ * **değiştirilemez**; yalnızca görünen etiketler palet adlarına çevrildi.
+ * Alan aslında sadece kartın hangi renkle çizileceğini belirliyor, bir
+ * meslek/disiplin bilgisi taşımıyor — adlandırma bunu yansıtsın diye.
+ */
 export const DISCIPLINE_LABELS = {
-  MIMARLIK: "Mimarlık",
-  MUHENDISLIK: "Mühendislik",
-  DIGER: "Diğer",
+  MIMARLIK: "Meşe",
+  MUHENDISLIK: "Beton",
+  DIGER: "Antrasit",
 } as const;

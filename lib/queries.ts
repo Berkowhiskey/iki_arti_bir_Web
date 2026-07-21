@@ -28,6 +28,9 @@ export type TeamMemberContent = {
   imageUrl: string | null;
   /** Hangi hero temasıyla gösterileceğini belirler — sıralamadan bağımsız. */
   discipline: "MUHENDISLIK" | "MIMARLIK" | "DIGER";
+  /** Kişisel hesaplar — yalnızca detay sayfasında gösterilir. */
+  instagramUrl: string | null;
+  linkedinUrl: string | null;
 };
 
 export type ProjectContent = {
@@ -87,6 +90,8 @@ export async function getTeamMembers(): Promise<TeamMemberContent[]> {
     bio: member.bio,
     imageUrl: member.imageUrl,
     discipline: member.discipline,
+    instagramUrl: member.instagramUrl,
+    linkedinUrl: member.linkedinUrl,
   }));
 }
 
@@ -129,6 +134,8 @@ export async function getTeamMemberBySlug(
     bio: member.bio,
     imageUrl: member.imageUrl,
     discipline: member.discipline,
+    instagramUrl: member.instagramUrl,
+    linkedinUrl: member.linkedinUrl,
   };
 }
 

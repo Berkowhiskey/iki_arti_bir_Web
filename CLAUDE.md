@@ -112,6 +112,40 @@
 >
 > **Proje durumu: Faz 1-4 tamamlandı, Faz 5 büyük ölçüde tamamlandı. Site sunuma hazır.**
 >
+> **21.07.2026 - 15:52 — Faz 6 (Görsel İyileştirmeler) başladı.**
+> Yalnızca arayüz: (1) ekip bölümü Shadcn carousel ile slider'a alınıyor,
+> (2) "Disiplin" → "Tema" (Beton · Meşe · Antrasit), (3) Hakkımızda logosu
+> metnin soluna, (4) hero'ya gerçek "kapı açılma" efekti.
+> **Veritabanı, sorgu ve iş mantığı değişmiyor.**
+>
+> ⚠️ **"Tema" değişikliği migration GEREKTİRMEZ** — `Discipline` enum'u ve
+> `discipline` kolonu aynen kalır, yalnızca 4 noktadaki kullanıcıya görünen
+> metin değişir. Alan adı yanlışsa önce etiketin mi şemanın mı değişmesi
+> gerektiğini ayırın.
+>
+> ⚠️ **Hero yüksekliği değişiyor** (`h-screen` → `md:h-[220vh]`). Buna dolaylı
+> bağlı kod: `site-header.tsx`'teki `window.innerHeight * 0.85` eşiği —
+> hero'ya hiç referans vermediği için grep ile bulunamıyordu, elle düzeltildi.
+>
+> ⚠️ **Sticky kuralı:** `overflow-hidden` sticky elemanın ÜZERİNDE olmalı,
+> ATASINDA değil. Atada olması onu scroll container yapar ve sticky'yi kırar.
+> Aynı sebeple `body { overflow-x: hidden }` eklemeyin (gerekirse `clip`).
+>
+> **21.07.2026 - 16:44 — Faz 6 onaylandı, Faz 6.1 tamamlandı.**
+> Kullanıcı kapı efektini tarayıcıda onayladı. İki ek iş yapıldı:
+> (1) kapı sonrası beyaz bekleme 22vh → 10vh (`HERO_VH` 220→200, kapı bitişi
+> 0.82→0.90), (2) ekip üyelerine `instagramUrl` / `linkedinUrl` alanları
+> eklendi — **yalnızca detay sayfasında** gösteriliyor, kartlarda değil
+> (kartın tamamı zaten tıklanabilir, iç içe bağlantı şaşırtıcı olurdu).
+>
+> ⚠️ **Lucide v1'de marka ikonu YOK** (Instagram/LinkedIn dahil). Site bunun
+> yerine tipografik bağlantı kullanıyor: `İNSTAGRAM ↗`. Marka logosu gerekirse
+> inline SVG yazılmalı.
+>
+> ⚠️ **Şema değişince `prisma generate` yetmez — dev sunucusunu da yeniden
+> başlatın.** Turbopack üretilen client'ı önbelleğe alıyor; aksi halde yeni
+> alanlar `undefined` gelir ve özellik "çalışmıyor" sanılır.
+>
 > ⚠️ **Açık güvenlik borcu (yarı kapandı — 21.07.2026 - 10:45):** Ceren'in şifresi
 > panelden değiştirildi ✅ · **Cansın'ın şifresi hâlâ `DegistirBeni2026!`** ⚠️
 > `/admin/account` ekranından değiştirilmeli — `db:seed` ile artık değiştirilemez.

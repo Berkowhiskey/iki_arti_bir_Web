@@ -7,7 +7,7 @@ mimari kararları kaydeder. Her faz sonunda `CLAUDE.md` §6 kuralı gereği gün
 
 ## Güncel Durum
 
-**Son güncelleme: 21.07.2026 - 14:05**
+**Son güncelleme: 21.07.2026 - 16:44**
 
 - ✅ **Faz 1 — Altyapı ve Veritabanı Mimarisi: TAMAMLANDI**
 - ✅ **Faz 2 — Ziyaretçi Arayüzü ve Framer Motion: TAMAMLANDI**
@@ -21,6 +21,303 @@ mimari kararları kaydeder. Her faz sonunda `CLAUDE.md` §6 kuralı gereği gün
   - ✅ 5.2a sitemap.xml + robots.txt
   - ✅ 5.2b Önbellekleme — **incelendi, bilinçli olarak yapılmadı** (gerekçe aşağıda)
   - ⬜ 5.2c OpenGraph genişletme, JSON-LD, Lighthouse ölçümü (kullanıcı erteledi)
+- ✅ **Faz 6 — Görsel İyileştirmeler: TAMAMLANDI ve onaylandı**
+- ✅ **Faz 6.1 — Kapı temposu + ekip sosyal medya: TAMAMLANDI**
+
+---
+
+## 21.07.2026 - 16:44 — Faz 6.1: Kapı Temposu ve Ekip Sosyal Medyası
+
+Kullanıcı Faz 6'yı tarayıcıda onayladı (sıra, beyaz zemin, mobil davranış,
+slider — hepsi doğru). İki ek istek geldi.
+
+### 1. Kapı Sonrası Beyaz Bekleme Kısaltıldı
+
+**Şikâyet:** "Kanatların arasından çok uzun bir beyazlık çıkıyor."
+
+**Ölçüm:** `HERO_VH=220` iken sticky yol 120vh; kapılar 98vh'de bitiyor, sahne
+120vh'de çözülüyordu → **22vh boyunca hiçbir şey olmayan beyaz ekran**.
+Neredeyse çeyrek ekranlık ölü kaydırma.
+
+**Çözüm:** `HERO_VH` 220 → **200** (sticky yol 100vh) ve kapı bitişi
+`0.82 → 0.90`.
+
+| | Önce | Sonra |
+| :--- | :--- | :--- |
+| Beyaz kuyruk | 22vh | **10vh** |
+| Kapı açılma süresi | 67vh | 60vh |
+| Toplam hero | 220vh | 200vh |
+
+Kapı süresi %10 kısaldı — kullanıcı tempoyu beğendiği için bilinçli olarak
+küçük tutuldu; asıl kazanç kuyruktan geldi.
+
+> `STICKY_END` türetilmiş sabit olduğu için `HERO_VH` değişince kendiliğinden
+> güncellendi; koreografi aralıkları da orantılı kaydırıldı
+> (modal 0.06→0.28, kapılar 0.30→0.90, `contentProgress` 0→0.34).
+
+### 2. Ekip Üyesi Sosyal Medya Alanları
+
+`TeamMember`'a `instagramUrl` ve `linkedinUrl` eklendi (ikisi de nullable).
+Migration yine **elle yazıldı** (`prisma migrate dev` bu ortamda etkileşimli):
+`20260721161500_add_team_social_links`. Bu sefer basitti — varsayılan değer ve
+benzersizlik kısıtı olmayan iki nullable kolon.
+
+**Yalnızca detay sayfasında gösteriliyor**, kartlarda değil. Gerekçe: kartın
+tamamı zaten tıklanabilir (başlıktan çıkan `before:inset-0` katmanı); içine
+ayrı bağlantılar koymak ziyaretçinin karta basmak isterken ikona basmasına yol
+açardı.
+
+> Firma hesapları (`ContactSettings.instagramUrl`) ile **kişisel hesaplar**
+> ayrı alanlardır; karıştırılmamalı.
+
+### ⚠️ Lucide v1'de Marka İkonu Yok
+
+`Instagram` ve `Linkedin` ikonları import edilmeye çalışıldı → derleme hatası.
+Lucide **marka ikonlarını tamamen kaldırdı** (5984 ikon var, hiçbiri marka
+değil).
+
+Site bu sorunu Faz 2'de zaten çözmüş: `contact-section.tsx` ikon yerine
+tipografik bağlantı kullanıyor — `İNSTAGRAM ↗`. Detay sayfasında **aynı desen**
+tekrarlandı; tutarlılık korundu ve yeni bağımlılık gerekmedi.
+
+> Marka logosu gerekirse inline SVG yazılmalı; Lucide'den gelmeyecek.
+
+### Test Ederken Düşülen İki Tuzak
+
+**1. React metin düğümleri arasına `<!-- -->` koyuyor.**
+`{label.toLocaleUpperCase("tr-TR")} ↗` çıktısı `INSTAGRAM<!-- --> ↗` oluyor.
+`grep "INSTAGRAM ↗"` bu yüzden boş döndü ve özellik çalışmıyor sanıldı —
+**kod doğruydu, test yanlıştı.** Ham HTML'e bakılarak anlaşıldı.
+
+**2. Dev sunucusu eski Prisma client'ıyla çalışıyordu.**
+Migration + `prisma generate` sonrası sunucu yeniden başlatılmadan test
+edildi; `member.instagramUrl` `undefined` gelince bağlantılar hiç render
+edilmedi.
+
+> ⚠️ **Şema değiştikten sonra `prisma generate` YETMEZ — dev sunucusu da
+> yeniden başlatılmalı.** Turbopack üretilen client'ı önbelleğe alıyor.
+
+**Türkçe büyük harf notu:** "Instagram" → `INSTAGRAM` (kelimede küçük `i` yok),
+"LinkedIn" → `LİNKEDIN` (i→İ). `toLocaleUpperCase("tr-TR")` doğru çalışıyor.
+
+### Test Sonuçları (21.07.2026 - 16:44)
+
+| Test | Sonuç |
+| :--- | :--- |
+| `npx tsc --noEmit` | ✅ |
+| `npx eslint` | ✅ Kendi kodumuzda 0 (2 devralınmış) |
+| `npm run build` | ✅ Temiz |
+| Hero 200vh + kapı 0.90 | ✅ HTML'de doğrulandı |
+| Sosyal bağlantılar (dolu) | ✅ İki bağlantı, doğru URL, `noopener noreferrer` |
+| Sosyal bağlantılar (boş) | ✅ Hiçbir şey render edilmiyor, ayraç çizgisi de yok |
+| Kartlarda görünmüyor | ✅ Anasayfada 0 eşleşme |
+| `aria-label` | ✅ "Ceren Gürbüz — Instagram (yeni sekmede açılır)" |
+
+Test verisi (Ceren'e yazılan geçici adresler) temizlendi; her iki üyede de
+alanlar `null`.
+
+---
+
+## 21.07.2026 - 16:10 — Faz 6 Kodlandı
+
+Dört maddenin tamamı uygulandı. **Estetik onay tarayıcıda verilecek** — ajan
+görsel yargıda bulunamıyor; kodun doğruluğu (sticky çakılıyor mu, yatay taşma
+var mı, reduce-motion doğru mu) otomatik doğrulandı.
+
+### Uygulananlar
+
+| Adım | Sonuç |
+| :--- | :--- |
+| Tema etiketleri | `Beton · Meşe · Antrasit`; enum ve migration'a dokunulmadı |
+| Hakkımızda logosu | İki kolon, logo solda, `object-contain` |
+| Ekip slider'ı | Embla carousel, 3'lü yerleşim, hover "floater" |
+| Hero kapı efekti | 220vh koşu yolu + sticky sahne, kanatlar `∓100%` |
+| Header eşiği | Hero'nun gerçek yüksekliğinden türetiliyor |
+
+### ⚠️ Yeni Dosya: `components/visitor/team-carousel.tsx`
+
+Ekip bölümü ikiye ayrıldı: `team-section.tsx` **Server Component** kaldı
+(başlık ve bölüm kabuğu), yalnızca slider ve hover animasyonu istemciye indi.
+CLAUDE.md §5'teki "maksimum RSC" kuralı korundu.
+
+> ⚠️ **`Reveal` slider'ın DIŞINDA olmalı.** Her kartı ayrı `Reveal` sarsaydı,
+> `whileInView` + `viewport={{ once: true }}` yatay kaydırmada ekran dışındaki
+> slaytları hiç tetiklemez ve üçüncü karttan sonrası kalıcı olarak
+> `opacity: 0` kalırdı. Tek `Reveal` tüm carousel'i sarıyor.
+
+> Grid'in `gap-px` hairline numarası (kartlar arası 1px çizgi, arka plandan
+> geliyordu) slider'da çalışmaz; kart kenarına `border border-white/10` ile
+> taklit edildi.
+
+### ⚠️ Hero: `STICKY_END` Türetilmiş Sabit
+
+Sticky sahne, section yüksekliğinin `1 - 100/220 ≈ 0.545`'inde çözülür. Tüm
+koreografi bu orana bölünerek 0→1'e normalize edilen `p` üzerinden yazıldı —
+böylece aralıklar "sahne çakılıyken geçen süre" cinsinden okunuyor.
+`HERO_VH` değiştirilirse `STICKY_END` kendiliğinden güncellenir.
+
+**Koreografi sırası:** ipucu (0→0.10) → modal (0.05→0.24) → kanatlar
+(0.26→0.82) → beyaz nefes (0.82→1.0).
+
+> ⚠️ **Modal kapılardan önce bitmeli.** Buzlu cam kart `backdrop-blur-xl`
+> kullanıyor; arkasındaki paneller kayarken bulanıklığı her karede yeniden
+> hesaplar ve Safari'de belirgin takılma yaratır.
+
+**Mobil aralıklar Faz 2 değerlerinde bırakıldı** (modal `[0, 0.45]` vb.) — o
+taraftaki his değişmesin diye. Mobilde kapı efekti yok, paneller sabit.
+
+**Reduce-motion CSS ile çözüldü** (`md:motion-reduce:h-screen`), JS ile değil:
+JS ile yapmak hidrasyondan sonra 220vh→100vh sıçraması yaratırdı — tam olarak
+korumaya çalıştığımız kullanıcıda.
+
+### Aynı Hatayı İki Kez Yaptım: Effect İçinde setState
+
+`site-header.tsx`'e eşik ölçümü eklerken `!isHome` dalında
+`setHeroThreshold(null)` yazdım; ESLint `react-hooks/set-state-in-effect`
+hatası verdi. **Faz 4/Parça 3'te de aynı hata yapılmıştı.**
+
+Çözüm ikisinde de aynı: **state sıfırlamak yerine kullanılmadığı yerde hiç
+dokunma.** Detay sayfasında eşik zaten kullanılmıyor (`isVisible` kısa devre
+yapıyor), dal tamamen kaldırıldı.
+
+> **Refleks:** Effect içinde `setState` yazacaksan önce sor — bu değer
+> türetilebilir mi, yoksa gerçekten dış bir sistemle mi senkronize ediliyor?
+
+### ESLint: Artık 2 Devralınmış Hata Var
+
+| Dosya | Kaynak |
+| :--- | :--- |
+| `hooks/use-mobile.ts` | Shadcn `sidebar` ile geldi (Faz 3) |
+| `components/ui/carousel.tsx` | Shadcn `carousel` ile geldi (Faz 6) |
+
+İkisi de **üretilen kod** ve ikisi de aynı kuralı ihlal ediyor
+(`set-state-in-effect`). Carousel'inki Embla'nın dış durumuyla senkronizasyon —
+kuralın muhafazakâr davrandığı meşru bir durum. Dosyaya `eslint-disable`
+eklemek `shadcn add` ile geri geleceği için tuzak olurdu; dokunulmadı.
+
+> **Kendi kodumuzda 0 hata olmalı.** Sayı 2'den 3'e çıkarsa yeni hata bizimdir.
+
+### Bulunan: Sahipsiz Yükleme Dosyası
+
+`public/uploads` denetlendi: diskte 2 dosya, veritabanında 1 referans →
+**1 sahipsiz dosya** (`900e1f8a-…png`). Bu tam olarak `upload-actions.ts`'te
+öngörülen senaryo: görsel yüklenip form kaydedilmeden çıkılmış. Zararsız
+(adresini kimse bilmez), yalnızca yer kaplıyor. Kullanıcıya soruldu, silinmedi.
+
+> İleride `public/uploads` ile veritabanı yollarını karşılaştıran bir temizlik
+> komutu yazılabilir — denetim sorgusu bu girdide hazır.
+
+### Test Sonuçları (21.07.2026 - 16:10)
+
+| Test | Sonuç |
+| :--- | :--- |
+| `npx tsc --noEmit` | ✅ |
+| `npx eslint` | ✅ Kendi kodumuzda 0 (2 devralınmış) |
+| `npm run build` | ✅ Temiz, 20 rota |
+| Duman testi | ✅ **11/11** |
+| Slider 4 üyeyle | ✅ 4 slayt render edildi, linkler doğru |
+| Hero koşu yolu + sticky | ✅ HTML'de doğrulandı |
+| `bg-antrasit-deep` hero'dan kalktı | ✅ 0 eşleşme |
+| Logo `object-contain` + iki kolon | ✅ Geçici gerçek PNG ile doğrulandı |
+
+Slider ve logo testleri **geçici kayıt/dosya ile** yapıldı; hepsi silinip
+önceki durum geri yüklendi (ekip 2, proje 2, Hakkımızda görseli `null`).
+
+### ⏳ Tarayıcıda Doğrulanacaklar (ajan göremez)
+
+1. Sıra: ipucu → modal → kanatlar (çakışma varsa aralıklar ayarlanmalı)
+2. Kanatların arasından **beyaz** çıkmalı (antrasit veya About metni değil)
+3. Kanatlar çıktıktan sonra sıçrama olmadan Hakkımızda başlamalı
+4. Yatay scrollbar belirmemeli
+5. Header kapılar tam açılana kadar görünmemeli
+6. About'un `Reveal`'ları kullanıcı görürken animasyonlanmalı
+7. 375px'te kapı efekti **olmamalı**; 767/768px geçişinde panel yarı yolda kilitlenmemeli
+8. Slider: sürükledikten sonra tıklama detay sayfasına **gitmemeli**
+9. Reduce-motion: hero tam bir ekran olmalı
+
+---
+
+## 21.07.2026 - 15:52 — Faz 6 Başladı: Görsel İyileştirmeler
+
+Site işlevsel olarak tamamlandı ve müşteri sunumuna hazır. Bu tur **yalnızca
+arayüz** — veritabanı şeması, sorgular ve iş mantığı değişmiyor.
+
+### Kapsam (kullanıcı gözlemlerinden)
+
+| # | İhtiyaç | Neden |
+| :-- | :--- | :--- |
+| 1 | Ekip bölümü slider'a alınacak | Kartlar iki kurucuyla şık ama 2+ kişide bölüm dağılacak |
+| 2 | "Disiplin" → "Tema" | Alan yalnızca renk temasını belirliyor; adı bunu yansıtmıyor |
+| 3 | Hakkımızda görseli metnin **soluna** | Oraya şirket logosu gelecek, net görünmeli |
+| 4 | Hero'ya gerçek "kapı açılma" efekti | Şu anki geçiş zayıf (aşağıda) |
+
+### Alınan Kararlar
+
+**Slider: Shadcn carousel (Embla).** Ok tuşları, klavye desteği ve ARIA rolleri
+hazır geliyor; projede zaten Shadcn kullanıldığı için görsel dil tutarlı.
+
+**Kapı efekti yalnızca masaüstünde.** Mobilde sağ panel zaten `hidden md:block`
+ile hiç render edilmiyor. Tek kanatlı "sürgülü kapı" da mümkündü ama kullanıcı
+mobilde mevcut sade davranışın korunmasını tercih etti.
+
+**Tema adları: Beton · Meşe · Antrasit.** Üçü de palet adı, tutarlı okunuyor.
+
+### ⚠️ 2. Madde Beklenenden Ucuz: Migration Gerekmiyor
+
+Kullanıcı "backend'e müdahale gerekebilir" diye çekinmişti. Gerekmiyor:
+veritabanındaki `Discipline` enum'u ve `discipline` kolonu **aynen kalıyor**,
+değişen yalnızca kullanıcıya görünen metinler. Grep ile doğrulandı — `discipline`
+56 yerde geçiyor ama **kullanıcıya görünen sadece 4 nokta** var. Geri alması
+bir dakika.
+
+> Genel ders: bir alanın *adı* yanlışsa, önce etiketin mi yoksa şemanın mı
+> değişmesi gerektiğini ayırın. Etiket değişikliği risksizdir; şema değişikliği
+> migration + 15 dosya demektir.
+
+### 4. Maddenin Teşhisi
+
+Kullanıcı "açılma çok düzgün olmuyor gibi" dedi. Kod bunu doğruladı:
+
+- Paneller yalnızca **±40 piksel** kayıyor (`leftPanelX = [0, -40]`) — kapı
+  değil, hafif aralanma.
+- Panellerin arkasında `bg-antrasit-deep` var, **beyaz yok**.
+- Yani görülen beyaz, kapının arkası değil — **alttan gelen Hakkımızda bölümü**.
+
+Hedeflenen: paneller `"0%"` → `∓"100%"` ile tamamen ekrandan çıksın, arkalarından
+beyaz görünsün, sonra Hakkımızda normal akışta başlasın.
+
+### ⚠️ Planlama Sırasında Yakalanan Gizli Hata
+
+`site-header.tsx`'teki eşik sabit: `scrollY >= window.innerHeight * 0.85`.
+Hero 220vh'ye uzayınca bu, kullanıcı hero'nun **%38'indeyken** tetiklenir —
+kapılar daha açılmadan üst bar düşer ve Faz 2'de özellikle kurgulanan
+"hero'nun tam ekran kompozisyonu bozulmasın" tasarımı sessizce bozulurdu.
+
+Eşik hero'nun **gerçek yüksekliğinden** türetilecek (`ResizeObserver` ile
+döndürmede yeniden ölçülerek).
+
+> **Ders:** Bir bileşenin yüksekliğini değiştirirken, o yüksekliğe **dolaylı
+> olarak** bağlı kodları arayın. Buradaki bağ `window.innerHeight` üzerinden
+> kuruluydu ve hero'ya hiç referans vermiyordu — grep ile bulunamazdı.
+
+### Mimari Yaklaşım: Scroll Runway + Sticky Sahne
+
+Section uzun bir "koşu yolu" olur (`h-screen md:h-[220vh]`), içindeki tek çocuk
+`md:sticky md:top-0 md:h-screen` ile ekrana çakılır.
+
+> ⚠️ **`overflow-hidden` sticky elemanın ÜZERİNDE olmalı, ATASINDA değil.**
+> Sticky elemanın kendi overflow'u zararsızdır; bir atada olması onu scroll
+> container yapar ve stickiness'i tamamen kırar. Aynı sebeple `globals.css`'e
+> `body { overflow-x: hidden }` **eklenmemeli** (gerekirse `clip` kullanın).
+
+> ⚠️ **Kapı arkası `bg-white` olmalı, `bg-background` DEĞİL.** `.dark` sınıfında
+> `--background` koyu olur; kapılar açılınca koyu bir boşluk, ardından beyaz
+> Hakkımızda gelir — tam olarak istenmeyen sıçrama.
+
+**`position: fixed` alternatifi reddedildi:** o kurguda Hakkımızda gerçekten
+hero'nun ardından akar ve `reveal.tsx`'teki `viewport={{ once: true }}` yüzünden
+tüm Reveal animasyonları kullanıcı görmeden yanar — geri de alınamaz. Sticky'de
+bu sorun **yapısal olarak** yok, çünkü eleman akışta kalıyor.
 
 ---
 
