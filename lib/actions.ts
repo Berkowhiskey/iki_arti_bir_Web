@@ -9,8 +9,15 @@ import { auth } from "@/lib/auth";
  * HER action, ilk satırında `requireAdmin()` çağırmak zorundadır.
  */
 
-export type ActionResult =
-  | { ok: true; message: string }
+/**
+ * Action'ların ortak dönüş tipi.
+ *
+ * `TData`, başarı durumunda geri taşınacak ek veriyi tanımlar (örn. yüklenen
+ * görselin yolu). Çoğu action veri döndürmez; `data` opsiyonel olduğu için
+ * `ActionResult` sade haliyle kullanılmaya devam eder.
+ */
+export type ActionResult<TData = undefined> =
+  | { ok: true; message: string; data?: TData }
   | { ok: false; message: string; fieldErrors?: Record<string, string[]> };
 
 export class UnauthorizedError extends Error {
@@ -36,9 +43,9 @@ export async function requireAdmin(): Promise<{ id: number; name: string }> {
  * Action gövdesini sarmalar: yetki ve beklenmedik hataları tek yerde yönetir.
  * CLAUDE.md §5 gereği her action try-catch ile korunur.
  */
-export async function runAction(
-  fn: () => Promise<ActionResult>
-): Promise<ActionResult> {
+export async function runAction<TData = undefined>(
+  fn: () => Promise<ActionResult<TData>>
+): Promise<ActionResult<TData>> {
   try {
     return await fn();
   } catch (error) {

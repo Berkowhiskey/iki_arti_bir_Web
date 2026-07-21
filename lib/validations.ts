@@ -23,6 +23,24 @@ function optional<T extends z.ZodType<string>>(schema: T) {
   return z.union([z.literal(""), schema]);
 }
 
+/**
+ * Yüklenmiş görselin yolu — `lib/uploads.ts`'in ürettiği desenle **birebir**
+ * eşleşmek zorunda.
+ *
+ * ⚠️ Bu alan formda görünmez, `ImageField` tarafından programatik olarak
+ * doldurulur. Yine de doğrulanır: action'lar herkese açık uç noktalar olduğu
+ * için istemci buraya istediği string'i yollayabilir. Serbest bırakılsaydı
+ * veritabanına dış URL veya `javascript:` gibi bir değer yazılabilir, o da
+ * ziyaretçi sayfasında `<img src>` olarak render edilirdi.
+ */
+export const uploadPath = z
+  .string()
+  .regex(
+    /^\/uploads\/[0-9a-f-]{36}\.(jpg|png|webp)$/,
+    "Görsel yolu geçersiz. Görseli yeniden yüklemeyi deneyin."
+  )
+  .nullable();
+
 // ---------------------------------------------------------------- Hero
 
 export const heroSchema = z.object({
@@ -52,6 +70,7 @@ export const aboutSchema = z.object({
     .trim()
     .min(1, "Metin boş bırakılamaz.")
     .max(5000, "Metin en fazla 5000 karakter olabilir."),
+  imageUrl: uploadPath,
 });
 
 export type AboutValues = z.infer<typeof aboutSchema>;
@@ -109,6 +128,110 @@ export const contactSchema = z.object({
 });
 
 export type ContactValues = z.infer<typeof contactSchema>;
+
+// ------------------------------------------------------------------- Ekip
+
+/**
+ * Sıra alanı string tutulur — koordinatlarla aynı gerekçe.
+ *
+ * ⚠️ `z.coerce.number()` cazip görünüyor ama `zodResolver` ile birlikte
+ * `z.preprocess` ile aynı tip sorununu üretiyor (MEMORY.md, Faz 4/Parça 1).
+ * Sayıya çevirme işi action'da `Number()` ile yapılır.
+ */
+const orderValue = z
+  .string()
+  .trim()
+  .regex(/^\d{1,3}$/, "Sıra 0-999 arasında bir sayı olmalı.");
+
+export const teamSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, "İsim boş bırakılamaz.")
+    .max(120, "İsim en fazla 120 karakter olabilir."),
+  title: z
+    .string()
+    .trim()
+    .min(1, "Unvan boş bırakılamaz.")
+    .max(120, "Unvan en fazla 120 karakter olabilir."),
+  bio: z
+    .string()
+    .trim()
+    .min(1, "Biyografi boş bırakılamaz.")
+    .max(3000, "Biyografi en fazla 3000 karakter olabilir."),
+  /// Ziyaretçi sayfasındaki renk temasını belirler — sıralamadan bağımsız.
+  discipline: z.enum(["MUHENDISLIK", "MIMARLIK", "DIGER"], {
+    message: "Disiplin seçin.",
+  }),
+  order: orderValue,
+  isActive: z.boolean(),
+  imageUrl: uploadPath,
+});
+
+export type TeamValues = z.infer<typeof teamSchema>;
+
+// --------------------------------------------------------------- Projeler
+
+export const projectSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(1, "Proje adı boş bırakılamaz.")
+    .max(150, "Proje adı en fazla 150 karakter olabilir."),
+  /**
+   * Adres satırında görünen kısım. Boş bırakılırsa action, proje adından
+   * otomatik üretir — kullanıcıyı slug kavramıyla uğraştırmamak için.
+   */
+  slug: optional(
+    z
+      .string()
+      .trim()
+      .max(150, "Adres en fazla 150 karakter olabilir.")
+      .regex(
+        /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+        "Adres yalnızca küçük harf, rakam ve tire içerebilir (örn: foca-villa-projesi)."
+      )
+  ),
+  category: z.enum(["MIMARLIK", "MUHENDISLIK", "IC_DIZAYN"], {
+    message: "Kategori seçin.",
+  }),
+  location: z
+    .string()
+    .trim()
+    .min(1, "Lokasyon boş bırakılamaz.")
+    .max(120, "Lokasyon en fazla 120 karakter olabilir."),
+  description: z
+    .string()
+    .trim()
+    .min(1, "Açıklama boş bırakılamaz.")
+    .max(5000, "Açıklama en fazla 5000 karakter olabilir."),
+  // CLAUDE.md Faz 4.4: koordinatlar projede zorunlu alan.
+  latitude: latitudeValue,
+  longitude: longitudeValue,
+  coverImage: uploadPath,
+  order: orderValue,
+  isPublished: z.boolean(),
+});
+
+export type ProjectValues = z.infer<typeof projectSchema>;
+
+/**
+ * Başlıktan URL adresi üretir. Türkçe karakterler ASCII karşılığına çevrilir —
+ * aksi halde `ş`/`ğ` gibi harfler adreste yüzde kodlamasıyla görünürdü.
+ */
+export function slugify(value: string): string {
+  const map: Record<string, string> = {
+    ç: "c", ğ: "g", ı: "i", ö: "o", ş: "s", ü: "u",
+    Ç: "c", Ğ: "g", İ: "i", Ö: "o", Ş: "s", Ü: "u",
+  };
+
+  return value
+    .replace(/[çğıöşüÇĞİÖŞÜ]/g, (char) => map[char] ?? char)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 150);
+}
 
 // ---------------------------------------------------------- Şifre değiştirme
 

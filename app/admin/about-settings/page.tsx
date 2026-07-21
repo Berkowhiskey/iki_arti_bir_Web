@@ -13,6 +13,7 @@ export default async function AboutSettingsPage() {
       defaultValues={{
         title: about?.title ?? "",
         content: about?.content ?? "",
+        imageUrl: about?.imageUrl ?? null,
       }}
     />
   );

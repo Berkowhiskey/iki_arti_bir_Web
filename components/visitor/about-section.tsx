@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { AboutContent } from "@/lib/queries";
 import { Reveal } from "./reveal";
 
@@ -40,6 +41,22 @@ export function AboutSection({ about }: { about: AboutContent }) {
             </Reveal>
           ))}
         </div>
+
+        {/* Görsel yalnızca panelden yüklendiyse gösterilir; yoksa bölüm
+            metin ağırlıklı sade halinde kalır. */}
+        {about.imageUrl && (
+          <Reveal delay={0.3}>
+            <div className="relative mt-16 aspect-video overflow-hidden bg-beton-100">
+              <Image
+                src={about.imageUrl}
+                alt=""
+                fill
+                sizes="(max-width: 768px) 100vw, 768px"
+                className="object-cover"
+              />
+            </div>
+          </Reveal>
+        )}
       </div>
     </section>
   );

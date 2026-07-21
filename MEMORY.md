@@ -7,16 +7,249 @@ mimari kararları kaydeder. Her faz sonunda `CLAUDE.md` §6 kuralı gereği gün
 
 ## Güncel Durum
 
-**Son güncelleme: 20.07.2026 - 23:15**
+**Son güncelleme: 21.07.2026 - 11:08**
 
 - ✅ **Faz 1 — Altyapı ve Veritabanı Mimarisi: TAMAMLANDI**
 - ✅ **Faz 2 — Ziyaretçi Arayüzü ve Framer Motion: TAMAMLANDI**
 - ✅ **Faz 3 — Kimlik Doğrulama ve Admin Panel Core: TAMAMLANDI**
-- 🟡 **Faz 4 — Full CMS Modülleri: Parça 1/3 TAMAMLANDI**
+- 🟡 **Faz 4 — Full CMS Modülleri: Parça 2/3 TAMAMLANDI**
   - ✅ Parça 1: Şifre değiştirme + Hero / Hakkımızda / İletişim formları
-  - ⬜ Parça 2: Görsel yükleme altyapısı + Ekip ve Proje CRUD
+  - ✅ Parça 2: Görsel yükleme altyapısı + Ekip ve Proje CRUD
   - ⬜ Parça 3: Ekip ve proje detay sayfaları
 - ⬜ Faz 5 — Akıllı Entegrasyonlar ve SEO
+
+---
+
+## 21.07.2026 - 11:08 — Faz 4 / Parça 2 Tamamlandı
+
+Görsel yükleme altyapısı, Ekip CRUD ve Proje CRUD (galeri dahil) kodlandı.
+CLAUDE.md Faz 4.2, 4.3 ve 4.4 adımlarının tamamı karşılandı.
+
+### Görsel Depolama Kararı: Yerel Disk
+
+Kullanıcı onayıyla **yerel disk** seçildi (`public/uploads/`), bulut servisi değil.
+Gerekçe: proje **kendi sunucusunda / VPS'te** yayınlanacak, dolayısıyla dosya
+sistemi kalıcı. Ek servis, API anahtarı, ücret ve kota derdi yok.
+
+> ⚠️ **Vercel/Netlify'a taşınırsa bu çalışmaz** — o platformlarda dosya sistemi
+> geçicidir, her deploy'da yüklenen görseller silinir. Taşıma gerekirse yalnızca
+> `lib/uploads.ts`'in içi değiştirilir; çağıran taraf yol yerine tam URL alacağı
+> için arayüzde değişiklik gerekmez.
+
+### ⚠️ Yükleme Güvenliğinin Üç Direği
+
+Dosya yükleme, panelin en riskli yüzeyi. Üç kural birlikte çalışıyor:
+
+1. **Dosya adı istemciden ALINMAZ.** Ad tamamen yeniden üretilir:
+   `randomUUID() + tespit edilen uzantı`. Bu tek karar dizin gezinme
+   (`../../etc/passwd`), çift uzantı (`resim.jpg.php`) ve ad çakışmasını
+   aynı anda çözer.
+2. **Tür, uzantıdan veya `file.type`'tan DEĞİL içerikten okunur** (magic bytes).
+   İkisi de istemci tarafından uydurulabilir; baytlar uydurulamaz. SVG bilinçli
+   olarak kabul edilmiyor — içinde script taşıyabilir.
+3. **Yol veritabanına yazılmadan önce Zod'dan geçer** (`uploadPath` şeması).
+   Action'lar açık HTTP uç noktaları olduğu için istemci `imageUrl` alanına
+   `https://…` veya `javascript:…` yollayabilirdi; bu değer sonra ziyaretçi
+   sayfasında `<img src>` olarak render edilirdi.
+
+> `deleteUpload()` de aynı deseni tekrar doğrular ve **sessizce başarısız olur**.
+> Böylece "görsel silinemedi" diye bir kayıt silme işlemi yarıda kalmaz —
+> artık kalan bir dosya, kayıp bir kayıttan iyidir.
+
+### ⚠️ Server Action Gövde Sınırı
+
+Server Action gövdesi varsayılan olarak **1 MB** ile sınırlı; görsel yükleme
+bunu anında aşıp "Body exceeded 1mb limit" veriyor. `next.config.ts` içinde
+`experimental.serverActions.bodySizeLimit: "6mb"` ayarlandı.
+
+> Bu değer `lib/uploads.ts`'teki `MAX_UPLOAD_BYTES` (5 MB) ile **elle senkron**.
+> Birini değiştirirken diğerini de güncelle; gövde sınırı biraz yüksek kalmalı
+> (çok parçalı gövde ek yükü de sayılıyor).
+
+### Kurulan Modüller
+
+| Rota | İçerik |
+| :--- | :--- |
+| `/admin/team-settings` | Ekip listesi (tablo, foto, durum rozeti) |
+| `/admin/team-settings/new` · `/[id]` | Ekleme / düzenleme formu |
+| `/admin/portfolio` | Proje listesi (kapak, kategori, galeri sayısı) |
+| `/admin/portfolio/new` · `/[id]` | Ekleme / düzenleme + galeri yönetimi |
+
+Yeni ortak bileşenler:
+- `components/admin/image-field.tsx` — tekil görsel seçme/önizleme/kaldırma
+- `components/admin/delete-dialog.tsx` — silme onayı (geri alınamaz işlem)
+- `app/admin/upload-actions.ts` — tüm modüllerin paylaştığı tek yükleme action'ı
+
+### Alınan Küçük Kararlar ve Gerekçeleri
+
+- **Görsel, form kaydedilmeden yüklenir.** Kullanıcı önizlemeyi anında görsün
+  diye. Bedeli: yükleyip kaydetmeden çıkan kullanıcı diskte sahipsiz dosya
+  bırakır. Zararsız; gerekirse ileride bir temizlik komutu yazılabilir.
+- **"Kaldır" diskten silmez**, yalnızca formdaki değeri temizler. Diskteki eski
+  dosya kayıt kaydedilince silinir — kullanıcı vazgeçip sayfadan çıkarsa mevcut
+  görseli kaybetmesin diye.
+- **Slug boş bırakılabilir**, proje adından üretilir (`slugify` Türkçe
+  karakterleri ASCII'ye çevirir). Çakışma olursa sonuna `-2`, `-3` eklenir.
+  Düzenlemede kaydın kendi slug'ı çakışma sayılmaz.
+- **Galeri yalnızca düzenleme ekranında** var: henüz kaydedilmemiş projenin
+  `id`'si yok, görselin bağlanacağı yer de yok.
+- **Galeri görselleri sırayla yüklenir**, paralel değil. "Son sıra + 1" sorgusu
+  eşzamanlı isteklerde yarışa girip aynı `order` değerini üretebilirdi.
+- **`isActive` / `isPublished` kapatmak kaydı silmez**, sadece gizler.
+
+### ⚠️ `watch()` Değil `useWatch`
+
+Kontrollü alanlar (`ImageField`, `Select`, `Switch`) `register` ile bağlanamaz;
+değerleri izlenmeli. İlk denemede `watch("alan")` kullanıldı ve ESLint
+`react-hooks/incompatible-library` uyarısı verdi — `watch()` güvenli şekilde
+memoize edilemiyor. `useWatch({ control, name })` hem uyarıyı kaldırıyor hem
+yalnızca ilgili alan değişince render ediyor. **Yeni formlarda doğrudan
+`useWatch` kullanın.**
+
+### Bulunan ve Kapatılan Boşluk: Hakkımızda Görseli Render Edilmiyordu
+
+`lib/queries.ts` `about.imageUrl` alanını Faz 2'den beri çekiyordu ama
+`about-section.tsx` onu hiç kullanmıyordu — o dönem yükleme olmadığı için alan
+hep `null`'du ve fark edilmemişti. Panelden yüklenebilir hale gelince bağlandı;
+görsel yoksa bölüm eskisi gibi metin ağırlıklı kalıyor.
+
+> Ders: veri katmanına alan eklemek, arayüzde kullanıldığı anlamına gelmiyor.
+> Yeni alan eklerken **tüketildiği yeri de doğrulayın**.
+
+### Bilinen Durum: ESLint'te 1 Hata (Bizim Değil)
+
+`hooks/use-mobile.ts` — Shadcn'in `sidebar` bileşeniyle gelen dosya,
+`react-hooks/set-state-in-effect` hatası veriyor. **Faz 3'ten beri var**,
+Parça 2'de eklenmedi. Üretilen kod olduğu için dokunulmadı; düzeltmek
+`useSyncExternalStore`'a geçmeyi gerektirir.
+
+### Test Sonuçları (21.07.2026 - 11:08)
+
+| Test | Sonuç |
+| :--- | :--- |
+| `npm run build` | ✅ Temiz, 16 rota |
+| `npx tsc --noEmit` | ✅ |
+| `npx eslint` | ✅ 0 uyarı (1 hata devralınmış, yukarıda) |
+| Tüm action'larda `requireAdmin()` | ✅ **11/11** |
+| Yükleme güvenlik testleri | ✅ **11/11** |
+| Zod şema testleri (Parça 2) | ✅ **29/29** |
+| Oturumsuz yeni rotalar | ✅ 4/4 → 307 `/login` |
+| Oturumla yeni rotalar | ✅ 7/7 HTTP 200 |
+| Geçersiz id (`abc`, `999999`) | ✅ 404 |
+| Dev sunucusu konsolu | ✅ Hata/uyarı yok |
+
+**Yükleme güvenlik testinde doğrulananlar:** `.jpg` adlı PHP betiği reddedildi ·
+SVG reddedildi · boş dosya reddedildi · 5 MB üstü reddedildi ·
+`../../../etc/passwd.png` zararsızlaştırıldı · `evil.png.php` `.png` olarak
+kaydedildi · `deleteUpload` desen dışı yolları silmedi.
+
+> **Not:** Parça 1'deki gibi, form **yazma** yolu (butona basıp veritabanına
+> kaydetme) otomatik test edilemedi — Server Action'lar build'e özgü eylem
+> kimliğiyle çağrılıyor. Okuma yolu, yetki, doğrulama ve yükleme katmanı test
+> edildi; **CRUD akışlarını tarayıcıda denemek gerekiyor.**
+
+---
+
+## 21.07.2026 - 10:45 — Seed Şifre Koruması ve Veritabanı Bağlantı Teşhisi
+
+### Değişen: `seed.ts` artık mevcut hesapların şifresini EZMİYOR
+
+Faz 4'te şifre değiştirme ekranı gelince eski `upsert` mantığı tehlikeli hale
+geldi: `update: { passwordHash }` bloğu, `npm run db:seed` her çalıştığında
+panelden değiştirilmiş şifreyi `.env`'deki eski değere **geri döndürüyordu.**
+
+**Yeni davranış:** hesap varsa yalnızca `name` güncellenir; `passwordHash`
+sadece hesap **ilk kez oluşturulurken** yazılır. bcrypt hash'i de artık yalnızca
+create dalında hesaplanıyor (mevcut hesapta 12 round boşa gitmesin diye).
+
+> ⚠️ **Bu, MEMORY.md'nin Faz 3 bölümündeki bir talimatı geçersiz kıldı.**
+> Orada "`.env`'deki şifreleri güncelleyip `npm run db:seed` çalıştırmak yeterli"
+> yazıyordu — **artık çalışmaz.** Şifre değiştirmenin tek yolu `/admin/account`
+> ekranı. Unutulan şifre için tek çare veritabanındaki `passwordHash` satırını
+> elle silip/sıfırlayıp seed'i yeniden çalıştırmak.
+
+### Güvenlik Borcunun Güncel Durumu
+
+`.env` şifreleri bcrypt ile karşılaştırılarak doğrulandı:
+
+| Hesap | `.env` şifresi hâlâ geçerli mi? | Durum |
+| :--- | :--- | :--- |
+| ceren@ikiartibiryapi.com | ❌ Hayır | ✅ Panelden değiştirilmiş |
+| cansin@ikiartibiryapi.com | ✅ Evet | ⚠️ **Hâlâ `DegistirBeni2026!`** |
+
+> **Yan fayda:** Ceren'in şifresinin değişmiş olması, Faz 4/Parça 1'de "uçtan uca
+> test edilemedi" diye açık bırakılan **form yazma yolunun gerçekten çalıştığını
+> kanıtlıyor.** Server Action → doğrulama → veritabanına yazma zinciri sağlam.
+
+**Kalan iş:** Cansın'ın şifresi `/admin/account` ekranından değiştirilmeli.
+
+### Teşhis: "pool timeout" = Veritabanı Kapalı
+
+Dev sunucusu açılırken `DriverAdapterError` verdi:
+
+```
+pool timeout: failed to retrieve a connection from pool after 10002ms
+(pool connections: active=0 idle=0 limit=10)
+```
+
+**Sebep:** XAMPP MariaDB çalışmıyordu (bilgisayar yeniden başlatılmıştı).
+`localhost:3306` dinlenmiyordu. Çözüm: XAMPP Control Panel → MySQL → Start.
+Dev sunucusunu yeniden başlatmaya gerek yok; Prisma sonraki istekte bağlanır.
+
+**Okuma anahtarı:** `active=0 idle=0` → havuz **tek bir bağlantı bile kuramadı**,
+yani sunucu erişilemez durumda. Bağlantı kurulup sonra kopsaydı bu sayılar
+sıfırdan farklı olurdu. Sorgunun kendisinde (`getTeamMembers`) hata aramayın —
+yığın izi sadece "ilk veritabanına dokunan kod" olduğu için orayı gösterir.
+
+### ⚠️ Makinede İKİ Ayrı MySQL Sunucusu Var
+
+Teşhis sırasında ortaya çıktı ve ileride yanıltabilir:
+
+| Sunucu | Port | Bizim projeyle ilgisi |
+| :--- | :--- | :--- |
+| **XAMPP MariaDB** | **3306** | ✅ `iki_arti_bir` burada |
+| Oracle MySQL 8 | 3307 (+ 33060 X Protocol) | ❌ Alakasız, ayrı kurulum |
+
+> ⚠️ **Görev Yöneticisi'nde `mysqld` görmek "veritabanı ayakta" demek DEĞİLDİR.**
+> Oracle MySQL 8 sürekli çalışıyor. Doğru kontrol port bazlı olmalı:
+> `Test-NetConnection 127.0.0.1 -Port 3306`. **33060** portu MySQL X Protocol'e
+> aittir ve MariaDB'de bulunmaz — hangi sunucuyu gördüğünüzü bu ayırt eder.
+>
+> İyi haber: portlar farklı olduğu için **çakışma yok**, XAMPP sorunsuz başlıyor.
+
+---
+
+## 21.07.2026 - 00:40 — Disk Doldu, Turbopack Çöktü (Kod Kaynaklı Değil)
+
+Dev sunucusu açılmaz oldu, tarayıcı "Internal Server Error" verdi ve terminale
+yüzlerce satır Turbopack paniği düştü:
+
+```
+Persisting failed: Unable to write SST file
+There is not enough space on the disk. (os error 112)
+ENOSPC: no space left on device
+thread 'tokio-runtime-worker' panicked ... StorageFull
+```
+
+**Sebep:** C: sürücüsü %100 dolmuştu (952 GB'ın 0.13 GB'ı boş). Turbopack derleme
+çıktısını ve `.next/dev` önbelleğini yazamayınca panikliyor. **Kodla hiçbir ilgisi
+yok.**
+
+**Teşhis refleksi:** Çıktıda `ENOSPC` veya `os error 112` görürseniz doğrudan disk
+alanına bakın; hata mesajının uzunluğu yanıltmasın, kod tarafında arayacak bir şey
+yok.
+
+**Çözüm:** Disk temizlendi (16 GB açıldı). `.next` silinip yeniden oluşturuldu.
+Proje bütünlüğü doğrulandı: 51 kaynak dosya, Faz 4 dosyalarının 16/16'sı, `.env`,
+`node_modules`, veritabanı (2 admin / 2 ekip / 3 proje) ve git geçmişi — hepsi
+sağlam. Typecheck ve production build temiz geçti.
+
+> ⚠️ **Turbopack disk alanına duyarlıdır.** Geliştirme sırasında birkaç GB boş
+> alan bırakın; `.next/dev` önbelleği kolayca yüzlerce MB'a çıkar.
+
+> **Temizlik notu:** `%TEMP%` klasörünü toptan silmek riskli — çalışan araçların
+> geçici dosyaları da oradadır. Hedefli temizlik (`.next`, `npm cache clean`)
+> tercih edin.
 
 ---
 
@@ -264,6 +497,11 @@ kendiliğinden değişmemeli. Dark mode yalnızca admin panelindeki düğmeyle a
 **Giriş artık çalıştığına göre bu şifreler değiştirilmeli.** Faz 4'te admin panele
 şifre değiştirme ekranı eklenene kadar, `.env`'deki değerleri güncelleyip
 `npm run db:seed` çalıştırmak yeterli (seed `upsert` ile hash'i günceller).
+
+> ❌ **GEÇERSİZ (21.07.2026 - 10:45):** Yukarıdaki `db:seed` yöntemi artık
+> çalışmaz. Seed, mevcut hesapların şifresini bilinçli olarak ezmiyor —
+> gerekçesi 21.07.2026 - 10:45 girdisinde. Şifre `/admin/account` ekranından
+> değiştirilir. Borcun güncel durumu için de aynı girdiye bakın.
 
 ---
 

@@ -76,7 +76,11 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 {group.items.map((item) => {
-                  const isActive = pathname === item.href;
+                  // Alt sayfalarda da vurgu kalsın: /admin/team-settings/3
+                  // veya /new açıkken menüde "Ekip" aktif görünmeli.
+                  const isActive =
+                    pathname === item.href ||
+                    pathname.startsWith(`${item.href}/`);
                   return (
                     <SidebarMenuItem key={item.href}>
                       <SidebarMenuButton

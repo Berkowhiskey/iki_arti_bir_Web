@@ -44,14 +44,45 @@
 > ⚠️ **Server Action kuralı:** Action'lar herkese açık HTTP uç noktalarıdır.
 > Veri değiştiren her action ilk satırında `requireAdmin()` çağırmak zorundadır.
 >
-> **Sıradaki: Faz 4 / Parça 2 — Görsel yükleme altyapısı + Ekip ve Proje CRUD.**
+> **21.07.2026 - 00:40 — Disk dolu kaynaklı Turbopack çöküşü giderildi.**
+> Dev sunucusu `ENOSPC` / `os error 112` ile açılmıyordu; sebep C: sürücüsünün
+> %100 dolu olmasıydı, kodla ilgisi yoktu. Disk temizlendikten sonra proje
+> bütünlüğü baştan sona doğrulandı — kayıp yok.
 >
-> **Faz 4'e ertelenen kullanıcı fikirleri:** ekip üyesi detay sayfaları (TeamMember'a
-> `slug` alanı gerekir) ve proje detay/galeri sayfaları. İkisi de admin CRUD hazır
-> olmadan boş içerikle kalacağı için bilinçli olarak ertelendi.
+> ⚠️ **Turbopack disk alanına duyarlıdır**; geliştirirken birkaç GB boş alan bırakın.
 >
-> ⚠️ **Açık güvenlik borcu:** `.env`'deki geçici admin şifreleri (`DegistirBeni2026!`)
-> hâlâ değiştirilmedi. Giriş artık çalıştığına göre öncelikli.
+> **21.07.2026 - 10:45 — Seed şifre koruması eklendi, bağlantı sorunu çözüldü.**
+> `seed.ts` artık mevcut hesapların şifresini ezmiyor — panelden değiştirilen şifre
+> `npm run db:seed` sonrası eskiye dönüyordu. Ayrıca dev sunucusundaki
+> `pool timeout` hatasının sebebi XAMPP MariaDB'nin kapalı olmasıydı (kod değil).
+>
+> ⚠️ **Veritabanı kontrolü port bazlı yapılmalı:** makinede 3307'de ayrı bir
+> Oracle MySQL 8 çalışıyor. Görev Yöneticisi'nde `mysqld` görmek yanıltıcıdır;
+> bizim veritabanımız **3306**'daki XAMPP MariaDB'dir.
+>
+> **21.07.2026 - 11:08 — Faz 4 / Parça 2 TAMAMLANDI.**
+> Görsel yükleme altyapısı (`public/uploads`, yerel disk), Ekip CRUD ve Proje CRUD
+> (galeri dahil) kodlandı. Faz 4.2, 4.3 ve 4.4 karşılandı. Tüm testler geçti:
+> 11/11 yükleme güvenliği, 29/29 şema, 11/11 action yetki kontrolü.
+>
+> ⚠️ **Yükleme kuralı:** Dosya adı istemciden asla alınmaz (UUID ile yeniden
+> üretilir), tür uzantıdan değil **içerikten** (magic bytes) okunur ve yol
+> veritabanına yazılmadan `uploadPath` şemasından geçer.
+>
+> ⚠️ **`next.config.ts`'teki `bodySizeLimit` (6 MB), `lib/uploads.ts`'teki
+> `MAX_UPLOAD_BYTES` (5 MB) ile elle senkron** — birini değiştirirken diğerini de.
+>
+> ⚠️ **Yeni formlarda `watch()` değil `useWatch({ control, name })` kullanın**;
+> `watch()` ESLint'in `react-hooks/incompatible-library` uyarısını tetikliyor.
+>
+> **Sıradaki: Faz 4 / Parça 3 — Ekip ve proje detay sayfaları.**
+> Artık admin CRUD hazır olduğu için içerikleri dolu gelecek. `TeamMember`'a
+> `slug` alanı eklenmesi gerekiyor (migration); `Project.slug` zaten var.
+> Rotalar: `app/(visitor)/ekip/[slug]/page.tsx` ve `app/(visitor)/projeler/[slug]/page.tsx`.
+>
+> ⚠️ **Açık güvenlik borcu (yarı kapandı — 21.07.2026 - 10:45):** Ceren'in şifresi
+> panelden değiştirildi ✅ · **Cansın'ın şifresi hâlâ `DegistirBeni2026!`** ⚠️
+> `/admin/account` ekranından değiştirilmeli — `db:seed` ile artık değiştirilemez.
 
 **Kurulum sırasında planlanandan sapan noktalar** (detaylar `MEMORY.md`'de):
 

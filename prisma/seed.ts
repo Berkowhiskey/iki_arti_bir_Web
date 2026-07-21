@@ -36,16 +36,36 @@ async function seedAdmins() {
     },
   ];
 
+  let created = 0;
+
   for (const admin of admins) {
-    const passwordHash = await bcrypt.hash(admin.password, 12);
-    await prisma.admin.upsert({
+    // ⚠️ Mevcut hesabın şifresi GÜNCELLENMEZ — kasıtlı.
+    // Admin panelden şifresini değiştiren bir kullanıcının şifresi, seed tekrar
+    // çalıştığında .env'deki eski değere geri dönmemeli. Şifre yalnızca hesap
+    // ilk kez oluşturulurken yazılır.
+    const existing = await prisma.admin.findUnique({
       where: { email: admin.email },
-      update: { name: admin.name, passwordHash },
-      create: { email: admin.email, name: admin.name, passwordHash },
+      select: { id: true },
     });
+
+    if (existing) {
+      await prisma.admin.update({
+        where: { email: admin.email },
+        data: { name: admin.name },
+      });
+    } else {
+      const passwordHash = await bcrypt.hash(admin.password, 12);
+      await prisma.admin.create({
+        data: { email: admin.email, name: admin.name, passwordHash },
+      });
+      created++;
+    }
   }
 
-  console.log(`✓ ${admins.length} admin hesabı hazır.`);
+  console.log(
+    `✓ ${admins.length} admin hesabı hazır (${created} yeni oluşturuldu, ` +
+      `${admins.length - created} mevcut — şifreleri korundu).`
+  );
 }
 
 async function seedSettings() {
