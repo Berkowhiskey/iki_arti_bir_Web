@@ -28,6 +28,7 @@ export default async function EditTeamMemberPage({
       memberId={member.id}
       defaultValues={{
         name: member.name,
+        slug: member.slug,
         title: member.title,
         bio: member.bio,
         discipline: member.discipline,

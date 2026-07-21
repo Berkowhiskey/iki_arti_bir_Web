@@ -1,20 +1,33 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 /**
  * Açılış animasyonu — iki panel ortadan ayrılarak siteyi açar.
  * "İki artı bir" kimliğine gönderme: iki parça, tek bütün.
+ *
+ * Yalnızca **ana sayfaya girişte** oynar. Ziyaretçi doğrudan bir detay
+ * sayfasına (örn. paylaşılan bir proje linki) geldiyse animasyon çalışmaz;
+ * orada tam ekran bir açılış perdesi beklenmedik olur ve 1.4 saniye boyunca
+ * içeriği kilitlerdi.
  */
 export function LoadingScreen() {
-  const [isLoading, setIsLoading] = useState(true);
+  const pathname = usePathname();
+  // İlk mount'taki adresi sabitler. Layout sayfa yüklenişinde bir kez mount
+  // olduğu için bu, "siteye hangi adresten girildi" sorusunun cevabıdır.
+  // Doğrudan `pathname === "/"` yazsaydık, detay sayfasından ana sayfaya
+  // geçildiğinde açılış animasyonu oturumun ortasında tekrar oynardı.
+  const [shouldPlay] = useState(() => pathname === "/");
+  const [isLoading, setIsLoading] = useState(shouldPlay);
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
+    if (!shouldPlay) return;
     const timer = setTimeout(() => setIsLoading(false), reduceMotion ? 200 : 1400);
     return () => clearTimeout(timer);
-  }, [reduceMotion]);
+  }, [reduceMotion, shouldPlay]);
 
   // Açılış sırasında sayfanın kaymasını engelle.
   useEffect(() => {

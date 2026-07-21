@@ -1,44 +1,14 @@
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import type { TeamMemberContent } from "@/lib/queries";
 import { PersonImage } from "./image-placeholder";
 import { Reveal } from "./reveal";
+import { DISCIPLINE_THEME } from "./discipline-theme";
 
 /**
  * Ekip — split-screen konseptinin geri döndüğü bölüm.
- *
- * Renkler hero ile birebir aynı mantıkta: mühendislik beton, mimarlık meşe.
- * Tema `discipline` alanından gelir, kartın sırasından DEĞİL — böylece admin
- * panelden sıralama değiştirildiğinde renkler karışmaz.
+ * Renk teması `discipline-theme.ts`'ten gelir (detay sayfasıyla ortak).
  */
-
-const DISCIPLINE_THEME = {
-  MUHENDISLIK: {
-    panel: "bg-beton-700",
-    texture:
-      "radial-gradient(ellipse at 20% 30%, var(--beton-500) 0%, transparent 55%), radial-gradient(ellipse at 75% 70%, var(--beton-600) 0%, transparent 50%), linear-gradient(160deg, var(--beton-600) 0%, var(--beton-800) 100%)",
-    accent: "text-beton-100",
-    rule: "bg-beton-100/40",
-    body: "text-beton-100/80",
-    avatar: "beton",
-  },
-  MIMARLIK: {
-    panel: "bg-mese-900",
-    texture:
-      "radial-gradient(ellipse at 70% 25%, var(--mese-700) 0%, transparent 62%), radial-gradient(ellipse at 25% 80%, var(--mese-800) 0%, transparent 58%), linear-gradient(200deg, var(--mese-800) 0%, var(--antrasit) 100%)",
-    accent: "text-mese-200",
-    rule: "bg-mese-300/40",
-    body: "text-mese-100/80",
-    avatar: "mese",
-  },
-  DIGER: {
-    panel: "bg-antrasit",
-    texture:
-      "linear-gradient(160deg, var(--antrasit) 0%, var(--antrasit-deep) 100%)",
-    accent: "text-beton-200",
-    rule: "bg-white/20",
-    body: "text-beton-300",
-    avatar: "neutral",
-  },
-} as const;
 
 export function TeamSection({ members }: { members: TeamMemberContent[] }) {
   if (members.length === 0) return null;
@@ -97,7 +67,15 @@ export function TeamSection({ members }: { members: TeamMemberContent[] }) {
                     />
                     <div className="p-8 md:p-10">
                       <h3 className="text-xl font-light text-white md:text-2xl">
-                        {member.name}
+                        {/* Kartın tamamını kaplayan bağlantı: başlıktan çıkan
+                            görünmez bir katman. Böylece ekran okuyucuda tek ve
+                            anlamlı bir bağlantı olur, kart yine de tıklanır. */}
+                        <Link
+                          href={`/ekip/${member.slug}`}
+                          className="before:absolute before:inset-0 before:z-10 before:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                        >
+                          {member.name}
+                        </Link>
                       </h3>
                       <div
                         className={`mt-2 font-mono text-[11px] tracking-[0.2em] ${theme.accent}`}
@@ -106,10 +84,16 @@ export function TeamSection({ members }: { members: TeamMemberContent[] }) {
                       </div>
                       <div className={`mt-6 h-px w-10 ${theme.rule}`} />
                       <p
-                        className={`mt-6 text-pretty text-sm leading-[1.85] ${theme.body}`}
+                        className={`mt-6 line-clamp-4 text-pretty text-sm leading-[1.85] ${theme.body}`}
                       >
                         {member.bio}
                       </p>
+                      <div
+                        className={`mt-6 inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.2em] ${theme.accent} transition-transform duration-300 group-hover:translate-x-1`}
+                      >
+                        DEVAMINI OKU
+                        <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden="true" />
+                      </div>
                     </div>
                   </div>
                 </article>

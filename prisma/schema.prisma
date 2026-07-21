@@ -78,6 +78,8 @@ enum Discipline {
 model TeamMember {
   id         Int        @id @default(autoincrement())
   name       String
+  /// Detay sayfası adresi: /ekip/<slug>. Faz 4/Parça 3'te eklendi.
+  slug       String     @unique
   title      String
   bio        String     @db.Text
   imageUrl   String?

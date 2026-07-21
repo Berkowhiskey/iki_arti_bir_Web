@@ -13,16 +13,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { CATEGORY_LABELS } from "@/lib/labels";
 import { ProjectRowActions } from "./project-row-actions";
 
 export const metadata: Metadata = { title: "Projeler" };
 export const dynamic = "force-dynamic";
-
-const CATEGORY_LABEL = {
-  MIMARLIK: "Mimarlık",
-  MUHENDISLIK: "Mühendislik",
-  IC_DIZAYN: "İç Dizayn",
-} as const;
 
 export default async function PortfolioPage() {
   const projects = await prisma.project.findMany({
@@ -97,7 +92,7 @@ export default async function PortfolioPage() {
                     </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {CATEGORY_LABEL[project.category]}
+                    {CATEGORY_LABELS[project.category]}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {project.location}

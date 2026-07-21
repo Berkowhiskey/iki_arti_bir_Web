@@ -3,13 +3,27 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, runAction, type ActionResult } from "@/lib/actions";
-import { teamSchema } from "@/lib/validations";
+import { teamSchema, slugify } from "@/lib/validations";
 import { deleteUpload } from "@/lib/uploads";
+import { uniqueSlug } from "@/lib/unique-slug";
 
 /** Ekip değişiklikleri hem ana sayfayı hem panel listesini tazeler. */
 function revalidateTeam() {
   revalidatePath("/");
   revalidatePath("/admin/team-settings");
+}
+
+async function findTeamIdBySlug(slug: string): Promise<number | null> {
+  const found = await prisma.teamMember.findUnique({
+    where: { slug },
+    select: { id: true },
+  });
+  return found?.id ?? null;
+}
+
+/** Ekip üyesi için benzersiz slug üretir. */
+function uniqueTeamSlug(base: string, excludeId?: number) {
+  return uniqueSlug(base, findTeamIdBySlug, excludeId);
 }
 
 export async function createTeamMember(input: unknown): Promise<ActionResult> {
@@ -28,10 +42,12 @@ export async function createTeamMember(input: unknown): Promise<ActionResult> {
       };
     }
 
-    const { order, ...rest } = parsed.data;
+    const { order, slug, ...rest } = parsed.data;
+    // Adres boş bırakıldıysa isimden üretilir.
+    const finalSlug = await uniqueTeamSlug(slugify(slug || rest.name));
 
     await prisma.teamMember.create({
-      data: { ...rest, order: Number(order) },
+      data: { ...rest, slug: finalSlug, order: Number(order) },
     });
 
     revalidateTeam();
@@ -68,11 +84,12 @@ export async function updateTeamMember(
       return { ok: false, message: "Ekip üyesi bulunamadı." };
     }
 
-    const { order, ...rest } = parsed.data;
+    const { order, slug, ...rest } = parsed.data;
+    const finalSlug = await uniqueTeamSlug(slugify(slug || rest.name), id);
 
     await prisma.teamMember.update({
       where: { id },
-      data: { ...rest, order: Number(order) },
+      data: { ...rest, slug: finalSlug, order: Number(order) },
     });
 
     // Fotoğraf değiştiyse eskisini diskten sil.

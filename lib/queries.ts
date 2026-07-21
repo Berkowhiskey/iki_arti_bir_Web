@@ -22,6 +22,7 @@ export type AboutContent = {
 export type TeamMemberContent = {
   id: number;
   name: string;
+  slug: string;
   title: string;
   bio: string;
   imageUrl: string | null;
@@ -81,6 +82,7 @@ export async function getTeamMembers(): Promise<TeamMemberContent[]> {
   return members.map((member) => ({
     id: member.id,
     name: member.name,
+    slug: member.slug,
     title: member.title,
     bio: member.bio,
     imageUrl: member.imageUrl,
@@ -102,6 +104,90 @@ export async function getPublishedProjects(): Promise<ProjectContent[]> {
     location: project.location,
     description: project.description,
     // Decimal → string; Client Component'e geçebilmesi için zorunlu.
+    latitude: project.latitude.toString(),
+    longitude: project.longitude.toString(),
+    coverImage: project.coverImage,
+  }));
+}
+
+// --------------------------------------------------- Detay sayfası sorguları
+
+/** Ekip üyesi detay sayfası — /ekip/[slug] */
+export async function getTeamMemberBySlug(
+  slug: string
+): Promise<TeamMemberContent | null> {
+  const member = await prisma.teamMember.findUnique({ where: { slug } });
+
+  // Pasif üyenin sayfası da açılmaz — ana sayfada gizliyse burada da gizli.
+  if (!member || !member.isActive) return null;
+
+  return {
+    id: member.id,
+    name: member.name,
+    slug: member.slug,
+    title: member.title,
+    bio: member.bio,
+    imageUrl: member.imageUrl,
+    discipline: member.discipline,
+  };
+}
+
+export type ProjectDetail = ProjectContent & {
+  images: { id: number; url: string; alt: string | null }[];
+};
+
+/** Proje detay sayfası — /projeler/[slug] */
+export async function getProjectBySlug(
+  slug: string
+): Promise<ProjectDetail | null> {
+  const project = await prisma.project.findUnique({
+    where: { slug },
+    include: {
+      images: {
+        orderBy: { order: "asc" },
+        select: { id: true, url: true, alt: true },
+      },
+    },
+  });
+
+  // Yayında olmayan projenin detay sayfası da açılmaz.
+  if (!project || !project.isPublished) return null;
+
+  return {
+    id: project.id,
+    title: project.title,
+    slug: project.slug,
+    category: project.category,
+    location: project.location,
+    description: project.description,
+    latitude: project.latitude.toString(),
+    longitude: project.longitude.toString(),
+    coverImage: project.coverImage,
+    images: project.images,
+  };
+}
+
+/**
+ * Detay sayfasının altındaki "diğer projeler" şeridi — mevcut proje hariç.
+ * Aynı kategoridekiler önce gelir, sonra kalanlar; en fazla `take` kayıt.
+ */
+export async function getOtherProjects(
+  excludeId: number,
+  take = 3
+): Promise<ProjectContent[]> {
+  const projects = await prisma.project.findMany({
+    where: { isPublished: true, id: { not: excludeId } },
+    orderBy: { order: "asc" },
+    take,
+  });
+
+  return projects.map((project) => ({
+    id: project.id,
+    title: project.title,
+    slug: project.slug,
+    category: project.category,
+    location: project.location,
+    description: project.description,
     latitude: project.latitude.toString(),
     longitude: project.longitude.toString(),
     coverImage: project.coverImage,

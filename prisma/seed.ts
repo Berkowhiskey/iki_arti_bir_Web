@@ -2,6 +2,7 @@ import "dotenv/config";
 import { Discipline, PrismaClient, ProjectCategory } from "@prisma/client";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import bcrypt from "bcryptjs";
+import { slugify } from "../lib/validations";
 
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL tanımlı değil. .env dosyasını kontrol et.");
@@ -160,9 +161,14 @@ async function seedTeam() {
     };
 
     if (existing) {
+      // ⚠️ `slug` güncellemede yazılmaz — panelden veya backfill script'iyle
+      // değiştirilmiş bir adres, seed tekrar çalışınca sıfırlanmamalı.
+      // (Admin şifresinde de aynı gerekçe geçerli, bkz. seedAdmins.)
       await prisma.teamMember.update({ where: { id: existing.id }, data });
     } else {
-      await prisma.teamMember.create({ data });
+      await prisma.teamMember.create({
+        data: { ...data, slug: slugify(member.name) },
+      });
     }
   }
 

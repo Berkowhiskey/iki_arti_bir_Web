@@ -13,16 +13,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DISCIPLINE_LABELS } from "@/lib/labels";
 import { TeamRowActions } from "./team-row-actions";
 
 export const metadata: Metadata = { title: "Ekip" };
 export const dynamic = "force-dynamic";
-
-const DISCIPLINE_LABEL = {
-  MIMARLIK: "Mimarlık",
-  MUHENDISLIK: "Mühendislik",
-  DIGER: "Diğer",
-} as const;
 
 export default async function TeamSettingsPage() {
   const members = await prisma.teamMember.findMany({
@@ -94,7 +89,7 @@ export default async function TeamSettingsPage() {
                     {member.title}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {DISCIPLINE_LABEL[member.discipline]}
+                    {DISCIPLINE_LABELS[member.discipline]}
                   </TableCell>
                   <TableCell className="text-center tabular-nums">
                     {member.order}

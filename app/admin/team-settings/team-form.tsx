@@ -168,6 +168,19 @@ export function TeamForm({ defaultValues, memberId }: TeamFormProps) {
       )}
 
       <Field
+        label="Adres (slug)"
+        htmlFor="slug"
+        error={errors.slug?.message}
+        hint="Detay sayfasının adresi: /ekip/… Boş bırakırsanız isimden otomatik üretilir."
+      >
+        <Input
+          id="slug"
+          aria-invalid={Boolean(errors.slug)}
+          {...register("slug")}
+        />
+      </Field>
+
+      <Field
         label="Sıra"
         htmlFor="order"
         error={errors.order?.message}

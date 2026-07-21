@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import {
   AnimatePresence,
   motion,
@@ -25,16 +26,27 @@ const NAV_ITEMS = [
 ] as const;
 
 /**
- * Üst navigasyon — hero'da görünmez, ziyaretçi hero'yu geçince belirir.
- * Aşağı kaydırırken gizlenir, yukarı kaydırırken geri gelir; böylece
- * hero'nun tam ekran kompozisyonu ve okuma alanı bozulmaz.
+ * Üst navigasyon.
+ *
+ * **Ana sayfada:** hero'da görünmez, ziyaretçi hero'yu geçince süzülerek belirir
+ * ve oradan sonra kalıcıdır. Böylece hero'nun tam ekran kompozisyonu bozulmaz.
+ *
+ * **Detay sayfalarında** (`/ekip/...`, `/projeler/...`): hero olmadığı için bar
+ * en baştan görünür ve menü öğeleri ana sayfaya hash ile götürür.
  */
 export function SiteHeader() {
   const { scrollY } = useScroll();
   const reduceMotion = useReducedMotion();
-  const [isVisible, setIsVisible] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
+  const [isScrolledPastHero, setIsScrolledPastHero] = useState(false);
   const [activeId, setActiveId] = useState<string>("anasayfa");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // Ana sayfa dışındaki sayfalarda (ekip/proje detayları) hero yok — orada
+  // bar en baştan görünür olmalı, yoksa navigasyon hiç erişilemez kalırdı.
+  const isHome = pathname === "/";
+  const isVisible = !isHome || isScrolledPastHero;
 
   // Hero'nun büyük bölümü geçilene kadar bar görünmez; geçildikten sonra
   // kaydırma yönünden bağımsız olarak kalıcıdır.
@@ -43,11 +55,21 @@ export function SiteHeader() {
   // "hide-on-scroll" deseni vardı. Tek sayfalık bu sitede ziyaretçi sürekli
   // aşağı gezindiği için bar tam ihtiyaç anında kayboluyordu — kaldırıldı.
   useMotionValueEvent(scrollY, "change", (latest) => {
-    setIsVisible(latest >= window.innerHeight * 0.85);
+    setIsScrolledPastHero(latest >= window.innerHeight * 0.85);
   });
 
+  // Detay sayfalarında hiçbir menü öğesi aktif görünmemeli. Bunu effect
+  // içinde `setActiveId("")` ile yapmak cazipti ama effect'te senkron
+  // setState gereksiz bir render turu doğurur (ESLint de uyarıyor).
+  // Değer state'ten türetiliyor: state ana sayfanın son aktif bölümünü
+  // hatırlar, geri dönüldüğünde vurgu yerinde olur.
+  const displayedActiveId = isHome ? activeId : "";
+
   // Aktif bölüm takibi — hangi bölümdeysek menüde işaretlenir.
+  // Detay sayfalarında bu bölümler yok, observer hiç kurulmaz.
   useEffect(() => {
+    if (!isHome) return;
+
     const sections = NAV_ITEMS.map((item) =>
       document.getElementById(item.id)
     ).filter((el): el is HTMLElement => el !== null);
@@ -66,10 +88,18 @@ export function SiteHeader() {
 
     sections.forEach((section) => observer.observe(section));
     return () => observer.disconnect();
-  }, []);
+  }, [isHome]);
 
   const handleNavigate = (id: string) => {
     setIsMenuOpen(false);
+
+    // Detay sayfasındaysak bölüm bu sayfada yok — ana sayfaya hash ile git.
+    // `section[id] { scroll-margin-top }` sayesinde sabit bar başlığı örtmez.
+    if (!isHome) {
+      router.push(id === "anasayfa" ? "/" : `/#${id}`);
+      return;
+    }
+
     const target = document.getElementById(id);
     if (!target) return;
 
@@ -117,15 +147,15 @@ export function SiteHeader() {
                   <button
                     type="button"
                     onClick={() => handleNavigate(item.id)}
-                    aria-current={activeId === item.id ? "true" : undefined}
+                    aria-current={displayedActiveId === item.id ? "true" : undefined}
                     className={`relative font-mono text-[11px] tracking-[0.15em] transition-colors ${
-                      activeId === item.id
+                      displayedActiveId === item.id
                         ? "text-mese-200"
                         : "text-beton-300 hover:text-white"
                     }`}
                   >
                     {item.label.toLocaleUpperCase("tr-TR")}
-                    {activeId === item.id && (
+                    {displayedActiveId === item.id && (
                       <motion.span
                         layoutId="nav-active"
                         className="absolute -bottom-1.5 left-0 h-px w-full bg-mese-300"
@@ -160,7 +190,7 @@ export function SiteHeader() {
                         type="button"
                         onClick={() => handleNavigate(item.id)}
                         className={`w-full py-3 text-left font-mono text-xs tracking-[0.15em] transition-colors ${
-                          activeId === item.id
+                          displayedActiveId === item.id
                             ? "text-mese-200"
                             : "text-beton-300 hover:text-white"
                         }`}

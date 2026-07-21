@@ -8,6 +8,7 @@ export default function NewTeamMemberPage() {
     <TeamForm
       defaultValues={{
         name: "",
+        slug: "",
         title: "",
         bio: "",
         discipline: "DIGER",

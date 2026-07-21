@@ -75,10 +75,26 @@
 > ⚠️ **Yeni formlarda `watch()` değil `useWatch({ control, name })` kullanın**;
 > `watch()` ESLint'in `react-hooks/incompatible-library` uyarısını tetikliyor.
 >
-> **Sıradaki: Faz 4 / Parça 3 — Ekip ve proje detay sayfaları.**
-> Artık admin CRUD hazır olduğu için içerikleri dolu gelecek. `TeamMember`'a
-> `slug` alanı eklenmesi gerekiyor (migration); `Project.slug` zaten var.
-> Rotalar: `app/(visitor)/ekip/[slug]/page.tsx` ve `app/(visitor)/projeler/[slug]/page.tsx`.
+> **21.07.2026 - 13:27 — Faz 4 / Parça 3 TAMAMLANDI. FAZ 4 KAPANDI.**
+> `/ekip/[slug]` ve `/projeler/[slug]` detay sayfaları eklendi; `TeamMember.slug`
+> alanı migration ile geldi. Ana sayfa kartları artık tıklanabilir. 22/22 duman
+> testi geçti, build temiz (18 rota).
+>
+> ⚠️ **Var olan tabloya zorunlu+unique kolon eklerken:** `prisma migrate dev`'in
+> tek adımlık çıktısı kayıt varken çalışmaz. Migration'ı elle üçe bölün:
+> nullable ekle → doldur → `NOT NULL` + unique index. Örnek:
+> `20260721113000_add_team_slug`.
+>
+> ⚠️ **Effect içinde senkron `setState` yazmayın** — ESLint
+> `react-hooks/set-state-in-effect` hatası verir. Değeri state'ten türetin.
+>
+> ⚠️ **Ziyaretçi layout'una yeni sayfa eklerken** `SiteHeader`, `LoadingScreen` ve
+> `SiteFooter`'ın o sayfada nasıl davranacağını kontrol edin — üçü de ana sayfaya
+> göre kurgulanmıştı ve detay sayfalarında ayrı ayrı onarım gerekti.
+>
+> **Sıradaki: Faz 5 — Akıllı Entegrasyonlar ve İnce İşler.**
+> 5.1 dinamik koordinat entegrasyonu (`getLatestProjectCoordinates` hazır, hero'ya
+> bağlı) · 5.2 SEO, `sitemap.ts`/`robots.ts`, görsel optimizasyonu ve Lighthouse.
 >
 > ⚠️ **Açık güvenlik borcu (yarı kapandı — 21.07.2026 - 10:45):** Ceren'in şifresi
 > panelden değiştirildi ✅ · **Cansın'ın şifresi hâlâ `DegistirBeni2026!`** ⚠️

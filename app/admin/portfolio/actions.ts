@@ -5,37 +5,25 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin, runAction, type ActionResult } from "@/lib/actions";
 import { projectSchema, slugify, uploadPath } from "@/lib/validations";
 import { deleteUpload } from "@/lib/uploads";
+import { uniqueSlug } from "@/lib/unique-slug";
 
 function revalidateProjects() {
   revalidatePath("/");
   revalidatePath("/admin/portfolio");
 }
 
-/**
- * Benzersiz slug üretir. Çakışma varsa sonuna `-2`, `-3` ... ekler.
- *
- * `excludeId`, düzenleme sırasında kaydın **kendi** slug'ını çakışma saymamak
- * için verilir; yoksa her kaydetmede slug'a gereksiz bir sayı eklenirdi.
- */
-async function uniqueSlug(base: string, excludeId?: number): Promise<string> {
-  const seed = base || "proje";
-  let candidate = seed;
-  let counter = 2;
+/** Proje tablosunda slug araması — `uniqueSlug` bunu kullanır. */
+async function findProjectIdBySlug(slug: string): Promise<number | null> {
+  const found = await prisma.project.findUnique({
+    where: { slug },
+    select: { id: true },
+  });
+  return found?.id ?? null;
+}
 
-  // Pratikte 1-2 turda biter; üst sınır sonsuz döngüye karşı.
-  for (let i = 0; i < 100; i++) {
-    const clash = await prisma.project.findUnique({
-      where: { slug: candidate },
-      select: { id: true },
-    });
-
-    if (!clash || clash.id === excludeId) return candidate;
-
-    candidate = `${seed}-${counter++}`;
-  }
-
-  // Buraya düşmek neredeyse imkânsız; yine de benzersizliği garantiye alalım.
-  return `${seed}-${Date.now()}`;
+/** Proje için benzersiz slug üretir. */
+function uniqueProjectSlug(base: string, excludeId?: number) {
+  return uniqueSlug(base, findProjectIdBySlug, excludeId);
 }
 
 function parseInput(input: unknown) {
@@ -66,7 +54,7 @@ export async function createProject(input: unknown): Promise<ActionResult> {
 
     const { slug, order, latitude, longitude, ...rest } = data;
     // Adres boş bırakıldıysa proje adından üretilir.
-    const finalSlug = await uniqueSlug(slugify(slug || rest.title));
+    const finalSlug = await uniqueProjectSlug(slugify(slug || rest.title));
 
     await prisma.project.create({
       data: {
@@ -105,7 +93,7 @@ export async function updateProject(
     }
 
     const { slug, order, latitude, longitude, ...rest } = data;
-    const finalSlug = await uniqueSlug(slugify(slug || rest.title), id);
+    const finalSlug = await uniqueProjectSlug(slugify(slug || rest.title), id);
 
     await prisma.project.update({
       where: { id },

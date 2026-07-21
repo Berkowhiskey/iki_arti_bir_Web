@@ -7,16 +7,129 @@ mimari kararları kaydeder. Her faz sonunda `CLAUDE.md` §6 kuralı gereği gün
 
 ## Güncel Durum
 
-**Son güncelleme: 21.07.2026 - 11:08**
+**Son güncelleme: 21.07.2026 - 13:27**
 
 - ✅ **Faz 1 — Altyapı ve Veritabanı Mimarisi: TAMAMLANDI**
 - ✅ **Faz 2 — Ziyaretçi Arayüzü ve Framer Motion: TAMAMLANDI**
 - ✅ **Faz 3 — Kimlik Doğrulama ve Admin Panel Core: TAMAMLANDI**
-- 🟡 **Faz 4 — Full CMS Modülleri: Parça 2/3 TAMAMLANDI**
+- ✅ **Faz 4 — Full CMS Modülleri: TAMAMLANDI (3/3)**
   - ✅ Parça 1: Şifre değiştirme + Hero / Hakkımızda / İletişim formları
   - ✅ Parça 2: Görsel yükleme altyapısı + Ekip ve Proje CRUD
-  - ⬜ Parça 3: Ekip ve proje detay sayfaları
-- ⬜ Faz 5 — Akıllı Entegrasyonlar ve SEO
+  - ✅ Parça 3: Ekip ve proje detay sayfaları
+- ⬜ **Faz 5 — Akıllı Entegrasyonlar ve SEO** ← sıradaki
+
+---
+
+## 21.07.2026 - 13:27 — Faz 4 / Parça 3 Tamamlandı (Faz 4 KAPANDI)
+
+Ekip üyesi ve proje detay sayfaları eklendi. Faz 2'den beri "admin CRUD hazır
+olmadan boş kalır" gerekçesiyle ertelenen iki fikir de böylece kapandı.
+
+| Rota | İçerik |
+| :--- | :--- |
+| `/ekip/[slug]` | Disiplin temalı üst blok, tam biyografi, diğer üyeler |
+| `/projeler/[slug]` | Kapak, açıklama, teknik künye, galeri, diğer projeler |
+
+### `TeamMember.slug` — Elle Yazılan Migration
+
+`prisma migrate dev` tek adımda "NOT NULL + UNIQUE kolon ekle" üretiyor; tabloda
+2 kayıt varken bu çalışamıyor (varsayılan değer yok, üstelik hepsi aynı olurdu →
+unique ihlali). Migration **elle üç adıma bölündü**:
+
+1. `slug` nullable olarak eklendi
+2. Mevcut satırlara `uye-<id>` yazıldı (id'ye dayandığı için çakışma imkânsız)
+3. `NOT NULL` + unique index
+
+Okunabilir adresler (`ceren-gurbuz`) ayrı bir script'le yazıldı:
+`npm run db:backfill-slugs`. Türkçe karakter çevirisi SQL'de yapılamadığı için
+uygulamadaki `slugify()` kullanıldı. Script **idempotent** — yalnızca `uye-<id>`
+desenindeki slug'lara dokunur, elle düzenlenmiş adresleri bozmaz.
+
+> ⚠️ **Var olan tabloya zorunlu+unique kolon eklerken bu deseni tekrarlayın:**
+> nullable ekle → doldur → sıkılaştır. Prisma'nın tek adımlık çıktısı bu durumda
+> her zaman patlar.
+
+> Migration sonrası `npx prisma generate` yine elle çalıştırıldı (Faz 1 ve Faz 2
+> revizyonunda da aynısı gerekmişti — bu kurulumda `migrate` client'ı otomatik
+> yeniden üretmiyor).
+
+### Seed'de Slug Koruması
+
+`seedTeam()` mevcut üyeyi güncellerken `slug` yazmıyor — panelden veya
+backfill'den gelen adres, seed tekrar çalışınca sıfırlanmasın diye. **Admin
+şifresindeki kararla aynı mantık** (bkz. 21.07.2026 - 10:45).
+
+### Detay Sayfaları İçin Layout Onarımı
+
+Detay sayfaları `(visitor)` layout'unu paylaşıyor ve üç şey bozuktu:
+
+1. **Navbar hiç görünmüyordu.** Bar `scrollY >= viewport * 0.85` şartıyla
+   beliriyor; detay sayfasında hero olmadığı için bu şart hiç sağlanmıyordu →
+   navigasyon tamamen erişilemez. Artık `pathname !== "/"` ise bar **en baştan
+   görünür**.
+2. **Menü linkleri ölüydü.** `scrollIntoView` ile `#ekip` aranıyordu ama o bölüm
+   detay sayfasında yok. Artık ana sayfa dışındayken `router.push("/#ekip")`.
+3. **Footer yoktu.** `page.tsx` içindeydi; `components/visitor/site-footer.tsx`
+   olarak çıkarılıp layout'a taşındı.
+
+**Açılış animasyonu** artık yalnızca ana sayfaya girişte oynuyor. Paylaşılan bir
+proje linkiyle gelen ziyaretçide tam ekran perde beklenmedik olur ve içeriği
+1.4 sn kilitlerdi. Giriş adresi `useState` initializer'ıyla **bir kez**
+yakalanıyor — doğrudan `pathname === "/"` yazılsaydı, detay sayfasından ana
+sayfaya dönüldüğünde animasyon oturumun ortasında tekrar oynardı.
+
+### ⚠️ Effect İçinde setState (ESLint Hatası)
+
+İlk denemede detay sayfasında menü vurgusunu temizlemek için effect içine
+`setActiveId("")` yazıldı; ESLint `react-hooks/set-state-in-effect` hatası verdi.
+**Çözüm: değeri state'ten türet.** `const displayedActiveId = isHome ? activeId : ""`
+— hem uyarı gitti hem gereksiz render turu ortadan kalktı, üstelik state ana
+sayfanın son aktif bölümünü hatırladığı için geri dönüldüğünde vurgu yerinde.
+
+### Harita: Gömülü Değil, Bağlantı
+
+Kullanıcı tercihi. Koordinat teknik künyede yazılı, yanında "Haritada aç"
+bağlantısı Google Haritalar'ı yeni sekmede açıyor. Gömülü iframe bilinçli olarak
+kullanılmadı: her ziyaretçi için Google'a istek gitmesi çerez/KVKK yükü getirir,
+sayfayı ağırlaştırır ve Lighthouse puanını düşürür (Faz 5.2'yi zorlaştırırdı).
+
+### Bu Turda Yapılan Tekrar Temizliği
+
+- `DISCIPLINE_THEME` → `components/visitor/discipline-theme.ts` (ekip bölümü +
+  detay sayfası ortak). MEMORY zaten hero/ekip dokularının elle senkron
+  tutulduğu konusunda uyarıyordu; üçüncü bir kopya çıkarmamak için toplandı.
+- `CATEGORY_LABELS` / `DISCIPLINE_LABELS` → `lib/labels.ts`. Üç ayrı dosyada
+  kopyalanmıştı (ziyaretçi + iki admin listesi).
+- `uniqueSlug` → `lib/unique-slug.ts`. Model bağımsız hale getirildi (hangi
+  tabloya bakılacağını geri çağrım belirliyor); Proje ve Ekip aynı mantığı
+  paylaşıyor.
+
+### Kartların Tıklanabilirliği
+
+Ekip ve proje kartlarının tamamı tıklanabilir. Desen: başlıktaki `<Link>`,
+`before:absolute before:inset-0` ile kartı kaplıyor. Böylece ekran okuyucuda
+**tek ve anlamlı** bir bağlantı olur (kartı sarmalayan `<a>` içine başlık, metin
+ve buton koymak erişilebilirlik açısından kötüdür).
+
+### Test Sonuçları (21.07.2026 - 13:27)
+
+| Test | Sonuç |
+| :--- | :--- |
+| `npm run build` | ✅ Temiz, **18 rota** |
+| `npx tsc --noEmit` | ✅ |
+| `npx eslint` | ✅ 0 uyarı (1 hata devralınmış — `hooks/use-mobile.ts`) |
+| Detay sayfaları duman testi | ✅ **22/22** |
+| Olmayan slug → 404 | ✅ |
+| **Gizli kayıtların detayı → 404** | ✅ `isActive:false` / `isPublished:false` |
+| `generateMetadata` başlıkları | ✅ Kişiye/projeye özel |
+| Dev sunucusu konsolu | ✅ Hata yok |
+
+Gizli kayıt testi **geçici kayıt oluşturup silinerek** yapıldı; mevcut veriye
+dokunulmadı.
+
+> **Not:** Ziyaretçi tarafı artık uçtan uca test edildi. Admin **yazma** yolu
+> hâlâ otomatik test edilemiyor (Server Action'lar build'e özgü eylem kimliğiyle
+> çağrılıyor) — tarayıcı testi gerekiyor.
 
 ---
 
@@ -809,16 +922,13 @@ npm run db:studio    # prisma studio (veri tarayıcısı)
 
 ### Bilinen Açıklar / Teknik Borç
 
-- `git init` henüz yapılmadı — proje versiyon kontrolü altında değil
-- `public/uploads/` boş; seed'in işaret ettiği placeholder görseller mevcut değil
-- `npm audit` 5 orta seviye uyarı veriyor (geçişli bağımlılıklar, acil değil)
-- `@types/node` hâlâ `^20`, Node ise 24 — şu an sorun çıkarmıyor
+- ~~`git init` henüz yapılmadı~~ → ✅ **Kapandı.** Proje git altında, `origin/main`'e push'lanıyor.
+- ~~`public/uploads/` boş~~ → ✅ **Kapandı** (Faz 4/Parça 2). Yükleme altyapısı kuruldu;
+  seed'in kırık görsel yolları da Faz 2'de temizlenmişti.
+- `npm audit` 5 orta seviye uyarı veriyor (geçişli bağımlılıklar, acil değil) — **hâlâ açık**
+- `@types/node` hâlâ `^20`, Node ise 24 — şu an sorun çıkarmıyor — **hâlâ açık**
 
 ---
 
-## Sıradaki Adım: Faz 2
-
-Ziyaretçi arayüzü ve Framer Motion animasyonları. Başlamadan önce:
-1. `npm install motion` (Framer Motion'ın güncel paket adı)
-2. XAMPP MySQL'in çalıştığından emin ol
-3. Split-screen için `beton-*` / `mese-*` renk paleti hazır bekliyor
+> **Bu noktadan yukarısı tarihsel kayıttır.** Projenin güncel durumu ve sıradaki
+> adım için dosyanın en başındaki **"Güncel Durum"** bölümüne bakın.

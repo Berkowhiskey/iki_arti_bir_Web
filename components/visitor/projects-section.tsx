@@ -1,12 +1,8 @@
+import Link from "next/link";
 import type { ProjectContent } from "@/lib/queries";
+import { CATEGORY_LABELS } from "@/lib/labels";
 import { ProjectImage } from "./image-placeholder";
 import { Reveal } from "./reveal";
-
-const CATEGORY_LABELS = {
-  MIMARLIK: "Mimarlık",
-  MUHENDISLIK: "Mühendislik",
-  IC_DIZAYN: "İç Dizayn",
-} as const;
 
 /** Şantiyeler / projeler — tek sütun başlık, ızgara yerleşimli kartlar. */
 export function ProjectsSection({ projects }: { projects: ProjectContent[] }) {
@@ -41,7 +37,7 @@ export function ProjectsSection({ projects }: { projects: ProjectContent[] }) {
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((project, index) => (
             <Reveal key={project.id} delay={index * 0.1}>
-              <article className="group h-full bg-white transition-shadow duration-500 hover:shadow-xl">
+              <article className="group relative h-full bg-white transition-shadow duration-500 hover:shadow-xl">
                 <ProjectImage
                   src={project.coverImage}
                   title={project.title}
@@ -53,7 +49,14 @@ export function ProjectsSection({ projects }: { projects: ProjectContent[] }) {
                     {CATEGORY_LABELS[project.category].toLocaleUpperCase("tr-TR")}
                   </div>
                   <h3 className="mt-3 text-lg font-light leading-snug text-antrasit">
-                    {project.title}
+                    {/* Kartı kaplayan görünmez bağlantı — ekip kartlarıyla
+                        aynı desen; ekran okuyucuda tek anlamlı bağlantı. */}
+                    <Link
+                      href={`/projeler/${project.slug}`}
+                      className="before:absolute before:inset-0 before:z-10 before:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mese-600"
+                    >
+                      {project.title}
+                    </Link>
                   </h3>
                   <div className="mt-2 text-sm text-beton-500">
                     {project.location}

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { LoadingScreen } from "@/components/visitor/loading-screen";
 import { SiteHeader } from "@/components/visitor/site-header";
+import { SiteFooter } from "@/components/visitor/site-footer";
 
 export default function VisitorLayout({ children }: { children: ReactNode }) {
   return (
@@ -14,6 +15,7 @@ export default function VisitorLayout({ children }: { children: ReactNode }) {
       </a>
       <SiteHeader />
       <main className="flex-1">{children}</main>
+      <SiteFooter />
     </>
   );
 }

@@ -36,17 +36,6 @@ export default async function HomePage() {
       <TeamSection members={team} />
       <ProjectsSection projects={projects} />
       {contact && <ContactSection contact={contact} />}
-
-      <footer className="border-t border-beton-200 bg-white px-6 py-10">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 text-center sm:flex-row sm:text-left">
-          <div className="font-mono text-[11px] tracking-[0.2em] text-beton-400">
-            İKİ ARTI BİR YAPI
-          </div>
-          <div className="text-xs text-beton-400">
-            © {new Date().getFullYear()} Tüm hakları saklıdır.
-          </div>
-        </div>
-      </footer>
     </>
   );
 }

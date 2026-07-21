@@ -143,12 +143,26 @@ const orderValue = z
   .trim()
   .regex(/^\d{1,3}$/, "Sıra 0-999 arasında bir sayı olmalı.");
 
+/** Adres alanı — Proje ve Ekip aynı kuralı paylaşır. */
+const slugValue = optional(
+  z
+    .string()
+    .trim()
+    .max(150, "Adres en fazla 150 karakter olabilir.")
+    .regex(
+      /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+      "Adres yalnızca küçük harf, rakam ve tire içerebilir (örn: ceren-gurbuz)."
+    )
+);
+
 export const teamSchema = z.object({
   name: z
     .string()
     .trim()
     .min(1, "İsim boş bırakılamaz.")
     .max(120, "İsim en fazla 120 karakter olabilir."),
+  /** Boş bırakılırsa action, isimden otomatik üretir. */
+  slug: slugValue,
   title: z
     .string()
     .trim()
@@ -182,16 +196,7 @@ export const projectSchema = z.object({
    * Adres satırında görünen kısım. Boş bırakılırsa action, proje adından
    * otomatik üretir — kullanıcıyı slug kavramıyla uğraştırmamak için.
    */
-  slug: optional(
-    z
-      .string()
-      .trim()
-      .max(150, "Adres en fazla 150 karakter olabilir.")
-      .regex(
-        /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-        "Adres yalnızca küçük harf, rakam ve tire içerebilir (örn: foca-villa-projesi)."
-      )
-  ),
+  slug: slugValue,
   category: z.enum(["MIMARLIK", "MUHENDISLIK", "IC_DIZAYN"], {
     message: "Kategori seçin.",
   }),
